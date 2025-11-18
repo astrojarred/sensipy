@@ -13,6 +13,7 @@ setup(
     name="sensipy",
     description="A tool to simulate gravitational wave follow-up observations with gamma-ray observatories.",
     version="2.0",
+    package_dir={"": "src"},
     packages=["sensipy"],
     url="https://github.com/astrojarred/sensipy/",
     author="Jarred Green (MPP), Barbara Patricelli (INAF)",
