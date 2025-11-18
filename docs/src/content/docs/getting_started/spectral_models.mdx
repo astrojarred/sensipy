@@ -4,3 +4,44 @@ description: How to format and load spectral models.
 ---
 
 import { Aside } from '@astrojs/starlight/components';
+
+## Spectral Models
+
+Gravitational wave toy supports time-resolved spectral models. 
+The data should contain spectra at varying times (or lightcurves at varying energies, depending on how you prefer to think about it).
+
+Currently, the supported file formats are:
+
+- CSV files
+- FITS files
+
+<Aside>
+    <p>
+        CSV files are the current recommended format for gravitational wave toy spectral models due to their flexibility and ease of use.
+    </p>
+</Aside>
+
+### CSV files format
+The code expects a CSV file with three columns: time, energy, and flux (dNdE) with the following units:
+
+- time: seconds
+- energy: GeV
+- dNdE: 1 / (cm2 s GeV)
+
+Multiple spectra can be included in the same file, each with a different time. The code will automatically organize the data into a time-energy grid.
+
+#### Sample CSV file
+A full sample CSV file is available in the `data/mock_data` directory. The first rows look something like this:
+
+```csv
+time [s],energy [GeV],dNdE [cm-2 s-1 GeV-1]
+1.061,1.04823,1e-08
+1.061,1.14937,8.3179e-09
+1.061,1.26026,6.9185e-09
+1.061,1.38184,5.7547e-09
+1.061,1.51516,4.7861e-09
+...
+```
+
+### Metadata
+

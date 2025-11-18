@@ -10,3 +10,11 @@ import { Aside } from '@astrojs/starlight/components';
 The gravitational wave toy is a tool for simulating gravitational wave follow-up observations with gamma-ray observatories.
 
 ## Features
+
+This package has three main features:
+
+- calculating the differential or integral sensitivity of a partiuclar observatory given a spectral model
+- simulating the time needed to observe a source with a particular model to reach a given significance
+- using pre-computed observation times to quickly calculate exposure times for observing a source with a particular model
+
+In all cases, the code needs a time-resolved spectral model and instrument response functions (IRFs) for a given instrument
