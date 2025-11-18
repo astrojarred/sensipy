@@ -1,4 +1,448 @@
 ---
-title: Exposure Calculations
-description: How to calculate the exposure time needed to reach a given significance
+title: Exposure Time Calculations
+description: How to calculate the exposure time needed to reach a given significance.
 ---
+
+import {Aside, Steps, Tabs, TabItem} from "@astrojs/starlight/components";
+
+## Overview
+
+Exposure time calculations determine **how long** a gamma-ray observatory needs to observe a transient source to achieve a specified detection significance. This is the core functionality for simulating gravitational wave (GW) followup observations.
+
+Given:
+
+- A time-evolving source spectrum
+- Observatory sensitivity
+- An observation start time (delay from event onset)
+- A target significance level
+
+sensipy calculates the **required observation time** to reach that significance, or reports that the source is not detectable.
+
+<Aside type="tip">
+  This is particularly useful for planning GW followup campaigns and
+  understanding under which scenarios electromagnetic counterparts could be
+  detected.
+</Aside>
+
+## The `observe` Method
+
+The primary method for exposure calculations is `Source.observe()`:
+
+```python
+from sensipy.source import Source
+from sensipy.sensitivity import SensitivityGammapy
+import astropy.units as u
+
+# Load source and sensitivity (see previous sections)
+source = Source(
+    filepath="grb_spectrum.csv",
+    min_energy=20 * u.GeV,
+    max_energy=10 * u.TeV,
+    ebl="franceschini"
+)
+
+sens = SensitivityGammapy(irf=irf, ...)
+sens.get_sensitivity_curve(grb=source)
+
+# Simulate observation starting 30 minutes after event
+result = source.observe(
+    sensitivity=sens,
+    start_time=30 * u.min,
+    min_energy=20 * u.GeV,
+    max_energy=10 * u.TeV,
+)
+
+print(f"Required observation time: {result['obs_time']}")
+print(f"Detection achieved: {result['seen']}")
+print(f"Start time: {result['start_time']}")
+print(f"End time: {result['end_time']}")
+```
+
+## Key Parameters
+
+### Required Parameters
+
+| Parameter     | Description                               | Example      |
+| ------------- | ----------------------------------------- | ------------ |
+| `sensitivity` | `Sensitivity` object with computed curves | `sens`       |
+| `start_time`  | Delay from event onset to start observing | `30 * u.min` |
+| `min_energy`  | Minimum energy for detection              | `20 * u.GeV` |
+| `max_energy`  | Maximum energy for detection              | `10 * u.TeV` |
+
+### Optional Parameters
+
+| Parameter             | Description                          | Default         |
+| --------------------- | ------------------------------------ | --------------- |
+| `target_precision`    | Precision for binary search          | `1 * u.s`       |
+| `max_time`            | Maximum allowed observation time     | `12 * u.h`      |
+| `sensitivity_mode`    | `"sensitivity"` or `"photon_flux"`   | `"sensitivity"` |
+| `target_significance` | Target sigma for detection           | `5.0`           |
+| `n_time_steps`        | Number of time steps for integration | `10`            |
+
+## Return Values
+
+The `observe()` method returns a dictionary with the following keys:
+
+```python
+{
+    'obs_time': <Quantity>,      # Required observation time
+    'seen': bool,                 # True if detection is possible
+    'start_time': <Quantity>,     # Observation start time
+    'end_time': <Quantity>,       # Observation end time (start + obs_time)
+    'min_energy': <Quantity>,     # Energy range minimum
+    'max_energy': <Quantity>,     # Energy range maximum
+    'ebl_model': str,             # EBL model used (or None)
+    'error_message': str,         # Error message if not detected
+
+    # Source metadata (if available)
+    'long': <Quantity>,           # RA/longitude
+    'lat': <Quantity>,            # Dec/latitude
+    'eiso': <Quantity>,           # Isotropic energy
+    'dist': <Quantity>,           # Distance
+    'angle': <Quantity>,          # Jet opening angle
+    'id': int,                    # Event ID
+}
+```
+
+## Usage Examples
+
+### Basic Detection Simulation
+
+<Tabs>
+  <TabItem label="Simple Case">
+    ```python
+    import astropy.units as u
+    from sensipy.source import Source
+    from sensipy.sensitivity import SensitivityGammapy
+    from sensipy.ctaoirf import IRFHouse
+
+    # Setup
+    house = IRFHouse(base_directory="./CTA-IRFs")
+    irf = house.get_irf(
+        site="south",
+        configuration="alpha",
+        zenith=20,
+        duration=1800,
+        azimuth="average",
+        version="prod5-v0.1",
+    )
+
+    source = Source(
+        filepath="grb.csv",
+        min_energy=20 * u.GeV,
+        max_energy=10 * u.TeV,
+        ebl="franceschini"
+    )
+
+    sens = SensitivityGammapy(
+        irf=irf,
+        observatory="cta_south",
+        min_energy=20 * u.GeV,
+        max_energy=10 * u.TeV,
+        radius=3.0 * u.deg,
+    )
+    sens.get_sensitivity_curve(grb=source)
+
+    # Observe
+    result = source.observe(
+        sensitivity=sens,
+        start_time=10 * u.min,
+        min_energy=20 * u.GeV,
+        max_energy=10 * u.TeV,
+    )
+
+    if result['seen']:
+        print(f"✓ Detectable in {result['obs_time']}")
+    else:
+        print(f"✗ Not detectable: {result['error_message']}")
+    ```
+
+  </TabItem>
+  
+  <TabItem label="Multiple Delays">
+    ```python
+    import numpy as np
+    import astropy.units as u
+    import matplotlib.pyplot as plt
+
+    # Test detection at different delay times
+    delays = np.logspace(1, 4, 20) * u.s  # 10s to 10,000s
+    obs_times = []
+
+    for delay in delays:
+        result = source.observe(
+            sensitivity=sens,
+            start_time=delay,
+            min_energy=20 * u.GeV,
+            max_energy=10 * u.TeV,
+        )
+
+        if result['seen']:
+            obs_times.append(result['obs_time'].to(u.s).value)
+        else:
+            obs_times.append(np.nan)  # Not detectable
+
+    # Plot results
+    plt.figure(figsize=(10, 6))
+    plt.loglog(delays, obs_times, 'o-')
+    plt.xlabel("Delay from Event [s]")
+    plt.ylabel("Required Observation Time [s]")
+    plt.title("Detectability vs. Observation Delay")
+    plt.grid(True, alpha=0.3)
+    plt.show()
+    ```
+
+  </TabItem>
+  
+  <TabItem label="With EBL Comparison">
+    ```python
+    import astropy.units as u
+
+    delay = 30 * u.min
+
+    for ebl_model in [None, "franceschini", "dominguez"]:
+        source = Source(
+            filepath="grb.csv",
+            min_energy=20 * u.GeV,
+            max_energy=10 * u.TeV,
+            ebl=ebl_model
+        )
+
+        sens.get_sensitivity_curve(grb=source)
+        result = source.observe(
+            sensitivity=sens,
+            start_time=delay,
+            min_energy=20 * u.GeV,
+            max_energy=10 * u.TeV,
+        )
+
+        ebl_label = ebl_model if ebl_model else "No EBL"
+        if result['seen']:
+            print(f"{ebl_label:20s}: {result['obs_time']}")
+        else:
+            print(f"{ebl_label:20s}: Not detectable")
+    ```
+
+  </TabItem>
+</Tabs>
+
+### Optimizing Observation Strategy
+
+You can use exposure calculations to optimize when and how long to observe:
+
+```python
+import numpy as np
+import astropy.units as u
+
+# Find optimal observation window
+delays = np.logspace(1, 4, 50) * u.s
+optimal_delay = None
+min_obs_time = np.inf * u.s
+
+for delay in delays:
+    result = source.observe(
+        sensitivity=sens,
+        start_time=delay,
+        min_energy=20 * u.GeV,
+        max_energy=10 * u.TeV,
+    )
+
+    if result['seen'] and result['obs_time'] < min_obs_time:
+        min_obs_time = result['obs_time']
+        optimal_delay = delay
+
+if optimal_delay:
+    print(f"Optimal strategy:")
+    print(f"  Wait {optimal_delay} after event")
+    print(f"  Then observe for {min_obs_time}")
+else:
+    print("Source not detectable at any tested delay")
+```
+
+## Understanding the Algorithm
+
+The exposure calculation uses a **binary search** algorithm to find the minimum observation time:
+
+<Steps>
+
+1. **Set search bounds**
+
+   - Lower bound: Short observation time (e.g., 10s)
+   - Upper bound: Maximum allowed time (e.g., 12 hours)
+
+2. **Compare source flux to sensitivity**
+
+   - Calculate the source flux at the given start time
+   - Compare to the sensitivity curve at different exposure times
+
+3. **Binary search**
+
+   - Test the midpoint exposure time
+   - If source is detectable → try shorter time
+   - If not detectable → try longer time
+   - Repeat until precision target is reached
+
+4. **Return result**
+   - If detectable within `max_time` → return observation time
+   - Otherwise → return `seen=False` with error message
+
+</Steps>
+
+### Sensitivity Modes
+
+The algorithm can use two different metrics:
+
+**1. Integral Sensitivity Mode** (default: `sensitivity_mode="sensitivity"`)
+
+- Integrates source flux and sensitivity over energy
+- Compares integrated energy flux
+- Used for most applications
+
+**2. Photon Flux Mode** (`sensitivity_mode="photon_flux"`)
+
+- Uses photon flux instead of energy flux
+- May be more appropriate for photon-counting analyses
+
+```python
+# Use photon flux mode
+result = source.observe(
+    sensitivity=sens,
+    start_time=30 * u.min,
+    min_energy=20 * u.GeV,
+    max_energy=10 * u.TeV,
+    sensitivity_mode="photon_flux",  # Use photon flux
+)
+```
+
+## Advanced Parameters
+
+### Precision Control
+
+The `target_precision` parameter controls how accurately the observation time is determined:
+
+```python
+# High precision (slower)
+result_precise = source.observe(
+    sensitivity=sens,
+    start_time=30 * u.min,
+    target_precision=0.1 * u.s,  # Precise to 0.1 seconds
+    # ... other params
+)
+
+# Lower precision (faster)
+result_fast = source.observe(
+    sensitivity=sens,
+    start_time=30 * u.min,
+    target_precision=10 * u.s,  # Precise to 10 seconds
+    # ... other params
+)
+```
+
+<Aside type="note">
+  For most applications, `1 * u.s` precision (default) is sufficient and
+  provides a good balance between accuracy and speed.
+</Aside>
+
+### Maximum Time Limit
+
+The `max_time` parameter sets the longest observation time to consider:
+
+```python
+# Only consider observations up to 2 hours
+result = source.observe(
+    sensitivity=sens,
+    start_time=30 * u.min,
+    max_time=2 * u.h,  # Max 2 hours
+    # ... other params
+)
+
+if not result['seen']:
+    print(f"Not detectable within {2 * u.h}")
+```
+
+### Time Step Integration
+
+The `n_time_steps` parameter controls how finely the time-integrated spectrum is sampled:
+
+```python
+result = source.observe(
+    sensitivity=sens,
+    start_time=30 * u.min,
+    n_time_steps=20,  # More steps = better accuracy
+    # ... other params
+)
+```
+
+## Batch Processing Multiple Events
+
+For large-scale studies (e.g., GW event catalogs), you can batch process many events:
+
+```python
+import pandas as pd
+from pathlib import Path
+
+# Catalog of GRB files
+grb_files = Path("./O5_catalog/").glob("cat05_*.fits")
+results_list = []
+
+for grb_file in grb_files:
+    source = Source(
+        filepath=str(grb_file),
+        min_energy=20 * u.GeV,
+        max_energy=10 * u.TeV,
+        ebl="franceschini"
+    )
+
+    sens.get_sensitivity_curve(grb=source)
+    result = source.observe(
+        sensitivity=sens,
+        start_time=30 * u.min,
+        min_energy=20 * u.GeV,
+        max_energy=10 * u.TeV,
+    )
+
+    results_list.append(result)
+
+# Convert to DataFrame for analysis
+df = pd.DataFrame(results_list)
+print(f"Detection fraction: {df['seen'].sum() / len(df):.2%}")
+print(f"Median obs time: {df[df['seen']]['obs_time'].median()}")
+```
+
+## Troubleshooting
+
+### Common Issues
+
+**Problem**: All sources report as not detectable
+
+**Solution**:
+
+- Check that `min_energy` and `max_energy` match between source, sensitivity, and `observe()` call
+- Verify the spectral model has sufficient flux
+- Try a longer `max_time`
+- Verify EBL absorption isn't too strong (try without EBL first)
+
+---
+
+**Problem**: Observation times are unrealistically short/long
+
+**Solution**:
+
+- Check the units of your spectral model (should be cm⁻² s⁻¹ GeV⁻¹)
+- Verify the IRF loading is correct
+- Ensure the sensitivity curve was calculated for the correct source
+
+---
+
+**Problem**: Inconsistent results between runs
+
+**Solution**:
+
+- This may indicate numerical instability - try adjusting `target_precision` or `n_time_steps`
+- Check for edge cases (very weak or very strong sources)
+
+## Next Steps
+
+- Learn about [Followup Calculations](./followups) using pre-computed lookup tables
+- See the [Tutorials](/tutorials/) for complete end-to-end examples
+- Check the [Source API reference](/reference/source) for detailed documentation

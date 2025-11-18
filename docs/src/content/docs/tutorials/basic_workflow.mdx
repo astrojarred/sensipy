@@ -1,0 +1,241 @@
+---
+title: Basic Workflow
+description: Complete end-to-end workflow for detecting a GRB with CTA.
+---
+
+import {Aside, Steps} from "@astrojs/starlight/components";
+
+## Objective
+
+This tutorial demonstrates the complete workflow for simulating a gravitational wave followup observation:
+
+1. Load Instrument Response Functions (IRFs)
+2. Load a spectral model for a gamma-ray burst (GRB)
+3. Calculate sensitivity curves
+4. Simulate an observation to determine detection time
+
+## Prerequisites
+
+- IRF files downloaded and organized (see [Setup Guide](/getting_started/setup))
+- A spectral model file (we'll use the included mock data)
+- Python environment with sensipy installed
+
+## Complete Workflow
+
+<Steps>
+
+1. **Import Required Modules**
+
+   ```python
+   from sensipy.ctaoirf import IRFHouse
+   from sensipy.sensitivity import SensitivityGammapy
+   from sensipy.source import Source
+   from astropy import units as u
+   ```
+
+2. **Load Instrument Response Functions**
+
+   ```python
+   # Create an IRF house pointing to your IRF directory
+   house = IRFHouse(base_directory="./CTA-IRFs")
+
+   # Load a specific IRF configuration
+   irf = house.get_irf(
+       site="south",               # CTA South
+       configuration="alpha",       # Alpha configuration
+       zenith=20,                   # 20 degree zenith angle
+       duration=1800,               # 1800 second (30 min) IRF
+       azimuth="average",           # Average azimuth
+       version="prod5-v0.1",        # IRF production version
+   )
+
+   print(irf)
+   ```
+
+   **Expected output:**
+
+   ```
+   CTA IRF [prod5-v0.1]
+       filepath: .../CTA-Performance-prod5-v0.1-South-20deg...
+       config: alpha
+       site: south
+       zenith: 20º
+       duration: 1800s
+       azimuth: average
+   ```
+
+3. **Load Spectral Model**
+
+   ```python
+   # Define energy range (typical for CTA)
+   min_energy = 20 * u.GeV   # or 0.02 TeV
+   max_energy = 10 * u.TeV
+
+   # Load a GRB spectral model with EBL absorption
+   grb = Source(
+       filepath="data/mock_data/GRB_42_mock.csv",
+       min_energy=min_energy,
+       max_energy=max_energy,
+       ebl="franceschini"  # Apply EBL absorption
+   )
+
+   print(f"Loaded GRB with {len(grb.times)} time steps")
+   print(f"Energy range: {grb.energy.min()} to {grb.energy.max()}")
+   ```
+
+4. **Create Sensitivity Calculator**
+
+   ```python
+   # Initialize sensitivity calculator
+   sens = SensitivityGammapy(
+       irf=irf,
+       observatory=f"cta_{irf.site.name}",  # "cta_south"
+       min_energy=min_energy,
+       max_energy=max_energy,
+       radius=3.0 * u.deg,  # Extraction region radius for point sources
+   )
+
+   print("Sensitivity calculator created")
+   ```
+
+5. **Compute Sensitivity Curve**
+
+   ```python
+   # Calculate sensitivity for this specific GRB
+   sens.get_sensitivity_curve(grb=grb)
+
+   print("Sensitivity curve computed")
+   print(f"Times: {sens.times}")
+   print(f"Sensitivity values: {sens.sensitivity_curve}")
+   ```
+
+6. **Simulate Observation**
+
+   ```python
+   # Simulate observation starting 30 minutes after the GW event
+   delay_time = 30 * u.min
+
+   result = grb.observe(
+       sensitivity=sens,
+       start_time=delay_time,
+       min_energy=min_energy,
+       max_energy=max_energy,
+   )
+
+   # Print results
+   print("\n" + "="*50)
+   print("OBSERVATION RESULTS")
+   print("="*50)
+   print(f"Start time (delay):     {result['start_time']}")
+   print(f"Observation time:       {result['obs_time']}")
+   print(f"End time:               {result['end_time']}")
+   print(f"Detectable:             {result['seen']}")
+   print(f"EBL model used:         {result['ebl_model']}")
+
+   if result['seen']:
+       print(f"\n✓ GRB is DETECTABLE!")
+       print(f"  Required exposure: {result['obs_time'].to(u.min):.1f}")
+   else:
+       print(f"\n✗ GRB is NOT detectable")
+       print(f"  Reason: {result.get('error_message', 'N/A')}")
+   ```
+
+7. **(Optional) Visualize the Spectral Pattern**
+
+   ```python
+   import matplotlib.pyplot as plt
+
+   # Show the time-energy evolution of the GRB
+   grb.show_spectral_pattern(resolution=100, return_plot=False)
+   plt.title("GRB Spectral Pattern")
+   plt.show()
+   ```
+
+</Steps>
+
+## Complete Script
+
+Here's the entire workflow in one script:
+
+```python
+from sensipy.ctaoirf import IRFHouse
+from sensipy.sensitivity import SensitivityGammapy
+from sensipy.source import Source
+from astropy import units as u
+
+# 1. Load IRF
+house = IRFHouse(base_directory="./CTA-IRFs")
+irf = house.get_irf(
+    site="south",
+    configuration="alpha",
+    zenith=20,
+    duration=1800,
+    azimuth="average",
+    version="prod5-v0.1",
+)
+
+# 2. Load GRB spectral model
+min_energy = 20 * u.GeV
+max_energy = 10 * u.TeV
+
+grb = Source(
+    filepath="data/mock_data/GRB_42_mock.csv",
+    min_energy=min_energy,
+    max_energy=max_energy,
+    ebl="franceschini"
+)
+
+# 3. Create sensitivity calculator
+sens = SensitivityGammapy(
+    irf=irf,
+    observatory=f"cta_{irf.site.name}",
+    min_energy=min_energy,
+    max_energy=max_energy,
+    radius=3.0 * u.deg,
+)
+
+# 4. Compute sensitivity
+sens.get_sensitivity_curve(grb=grb)
+
+# 5. Simulate observation
+delay_time = 30 * u.min
+
+result = grb.observe(
+    sensitivity=sens,
+    start_time=delay_time,
+    min_energy=min_energy,
+    max_energy=max_energy,
+)
+
+# 6. Display results
+print(f"Detectable: {result['seen']}")
+if result['seen']:
+    print(f"Observation time: {result['obs_time']}")
+```
+
+## Understanding the Results
+
+The `result` dictionary contains:
+
+- **`obs_time`**: How long to observe to reach 5σ significance
+- **`seen`**: `True` if detection is possible, `False` otherwise
+- **`start_time`**: When observation begins (= delay)
+- **`end_time`**: When observation ends (= delay + obs_time)
+- **`ebl_model`**: EBL absorption model used
+- **Source metadata**: RA, Dec, distance, energy, etc. (if available)
+
+## Next Steps
+
+Now that you've completed the basic workflow, try:
+
+- **Different delays**: Test `delay_time = 10 * u.s` or `3 * u.h`
+- **Different configurations**: Try `site="north"` or `zenith=60`
+- **No EBL**: Load the source with `ebl=None` to see the difference
+- **Multiple events**: Loop over many GRB files to build statistics
+
+## Further Reading
+
+- [Loading IRFs](./loading_irfs) - Detailed guide on IRF management
+- [Calculating Sensitivity](./calculating_sensitivity) - Deep dive into sensitivity
+- [Simulating Observations](./simulating_observations) - Advanced observation simulations
+- [API Reference: Source](/reference/source) - Full Source class documentation

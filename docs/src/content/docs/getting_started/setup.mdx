@@ -1,0 +1,267 @@
+---
+title: Setup and Data Requirements
+description: Setting up IRFs, EBL models, and data files for sensipy.
+---
+
+import {Aside, Steps, FileTree} from "@astrojs/starlight/components";
+
+After installing sensipy, you'll need to set up the required data files to use the package effectively. This guide covers downloading and organizing Instrument Response Functions (IRFs), EBL models, and spectral model data.
+
+## Instrument Response Functions (IRFs)
+
+IRFs define the sensitivity and performance characteristics of a gamma-ray observatory under specific observing conditions. sensipy uses CTAO IRFs to calculate sensitivity curves.
+
+### Supported IRF Versions
+
+sensipy supports the following CTA IRF productions:
+
+- **prod5-v0.1** (Alpha Configuration, recommended for most use cases)
+- **prod5-v0.2** (Alpha, Omega, and Alpha-LST configurations)
+- **prod3b-v2** (Legacy support)
+
+<Aside type="tip">
+  The most recent Alpha configuration IRFs are **prod5-v0.1**, which can be
+  found on [Zenodo](https://zenodo.org/records/5499840).
+</Aside>
+
+### Downloading IRFs
+
+<Steps>
+
+1. **Visit the Zenodo repository**
+
+   Go to the [CTA IRF Zenodo page](https://zenodo.org/records/5499840) to access the IRF files.
+
+2. **Download the required FITS files**
+
+   Download the `.tar.gz` archives for the sites, zenith angles, and durations you need. For example:
+
+   - `CTA-Performance-prod5-v0.1-North-20deg.FITS.tar.gz`
+   - `CTA-Performance-prod5-v0.1-South-20deg.FITS.tar.gz`
+
+3. **Extract the archives**
+
+   Extract the downloaded files into a organized directory structure.
+
+</Steps>
+
+### IRF Directory Structure
+
+Organize your IRF files following this structure:
+
+<FileTree>
+
+- CTA-IRFs/ (root directory for all IRFs)
+  - prod5-v0.1/
+    - fits/
+      - CTA-Performance-prod5-v0.1-North-20deg.FITS.tar.gz
+      - CTA-Performance-prod5-v0.1-South-20deg.FITS.tar.gz
+      - CTA-Performance-prod5-v0.1-North-40deg.FITS.tar.gz
+      - ...
+  - prod5-v0.2/
+    - fits/
+      - ...
+  - prod3b-v2/
+    - fits/
+      - ...
+
+</FileTree>
+
+<Aside type="caution">
+  When initializing the `IRFHouse` class, you'll provide the path to the root
+  directory (e.g., `CTA-IRFs/`). The package expects this specific directory
+  structure.
+</Aside>
+
+### Example IRF Loading
+
+```python
+from sensipy.ctaoirf import IRFHouse
+
+# Create an IRF house pointing to your IRF directory
+# CHECK: Ensure this path points to your actual IRF directory
+house = IRFHouse(base_directory="./CTA-IRFs")
+
+# Load a specific IRF
+irf = house.get_irf(
+    site="south",
+    configuration="alpha",
+    zenith=20,
+    duration=1800,
+    azimuth="average",
+    version="prod5-v0.1",
+)
+
+print(irf)
+```
+
+## EBL Models
+
+Extragalactic Background Light (EBL) models account for the absorption of gamma rays as they travel through intergalactic space. sensipy includes several EBL models in the `data/ebl/` directory.
+
+### Available Models
+
+The package includes the following EBL absorption models:
+
+- **franceschini** - Franceschini et al. (2008) model
+- **franceschini_2017** - Franceschini & Rodighiero (2017) model
+- **dominguez** - Domínguez et al. (2011) model
+- **saldana-lopez_2021** - Saldana-Lopez et al. (2021) model
+
+<Aside type="note">
+  These EBL models are automatically included with the sensipy package and are
+  located in the `data/ebl/` directory within the package installation.
+</Aside>
+
+### Using Gammapy's EBL Models
+
+sensipy also supports EBL models from Gammapy. To use Gammapy's EBL dataset:
+
+<Steps>
+
+1. **Set the GAMMAPY_DATA environment variable**
+
+   ```bash
+   export GAMMAPY_DATA=/path/to/gammapy-data
+   ```
+
+2. **Download EBL models using Gammapy**
+
+   ```bash
+   gammapy download datasets
+   ```
+
+3. **Use the EBL model in your code**
+
+   ```python
+   from sensipy.source import Source
+
+   # Load source with EBL absorption
+   source = Source(
+       filepath="path/to/spectrum.csv",
+       min_energy=0.02 * u.TeV,
+       max_energy=10 * u.TeV,
+       ebl="franceschini"
+   )
+   ```
+
+</Steps>
+
+See the [EBL Models](./ebl_models) page for more details on when and how to use EBL absorption.
+
+## Spectral Model Data
+
+sensipy requires time-resolved spectral models as input. The package provides example mock data in the `data/mock_data/` directory.
+
+### Mock Data Files
+
+The package includes example files:
+
+<FileTree>
+
+- data/
+  - mock_data/
+    - GRB_42_mock.csv (CSV format spectral model)
+    - GRB_42_mock.fits (FITS format spectral model)
+    - GRB_42_mock_metadata.csv (metadata for the source)
+
+</FileTree>
+
+### Using Your Own Data
+
+To use your own spectral models:
+
+1. **Prepare your data** in CSV or FITS format (see [Spectral Models](./spectral_models))
+2. **Include metadata** (optional but recommended) for source properties like distance, coordinates, etc.
+3. **Load the data** using the `Source` class
+
+```python
+from sensipy.source import Source
+import astropy.units as u
+
+# Load your custom spectral model
+grb = Source(
+    filepath="path/to/your/model.csv",
+    min_energy=30 * u.GeV,
+    max_energy=10 * u.TeV,
+    ebl="franceschini"
+)
+```
+
+## Gravitational Wave Event Catalogs
+
+For full GW followup simulations, you'll need access to gravitational wave event catalogs (e.g., O5 simulations).
+
+<Aside type="caution">
+  GW event catalogs are not included with the package. Contact the maintainers
+  if you need access to these catalogs for your research.
+</Aside>
+
+### Using Pre-computed Lookup Tables
+
+If you have access to pre-computed observation time lookup tables (e.g., `O5_gammapy_observations_v4.parquet`):
+
+```python
+import pandas as pd
+from sensipy import followup
+import astropy.units as u
+
+# Load the lookup table
+lookup_df = pd.read_parquet("./O5_gammapy_observations_v4.parquet")
+
+# Quick exposure calculation
+result = followup.get_exposure(
+    event_id=1,
+    delay=10 * u.s,
+    site="north",
+    zenith=60,
+    extrapolation_df=lookup_df,
+    ebl="franceschini",
+)
+```
+
+## Verifying Your Setup
+
+To verify your setup is working correctly:
+
+```python
+from sensipy.ctaoirf import IRFHouse
+from sensipy.source import Source
+import astropy.units as u
+
+# Test IRF loading
+try:
+    house = IRFHouse(base_directory="./CTA-IRFs")
+    irf = house.get_irf(
+        site="south",
+        configuration="alpha",
+        zenith=20,
+        duration=1800,
+        azimuth="average",
+        version="prod5-v0.1",
+    )
+    print("✓ IRF loading successful")
+except Exception as e:
+    print(f"✗ IRF loading failed: {e}")
+
+# Test spectral model loading
+try:
+    # Use package's mock data
+    source = Source(
+        filepath="data/mock_data/GRB_42_mock.csv",
+        min_energy=30 * u.GeV,
+        max_energy=10 * u.TeV,
+    )
+    print("✓ Spectral model loading successful")
+except Exception as e:
+    print(f"✗ Spectral model loading failed: {e}")
+```
+
+## Next Steps
+
+Now that your environment is set up, you can:
+
+- Learn about [Spectral Models](./spectral_models) formats and requirements
+- Understand [EBL Models](./ebl_models) and when to use them
+- Follow the [Tutorials](/tutorials/) for step-by-step guides
+- Explore the [API Reference](/reference/) for detailed documentation
