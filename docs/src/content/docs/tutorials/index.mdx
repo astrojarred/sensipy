@@ -1,0 +1,69 @@
+---
+title: Tutorials
+description: Step-by-step guides for using sensipy.
+---
+
+import {Card, CardGrid} from "@astrojs/starlight/components";
+
+## Welcome to the Tutorials
+
+These tutorials provide step-by-step guides for common workflows in sensipy. Each tutorial is self-contained and includes complete, runnable code examples.
+
+## Available Tutorials
+
+<CardGrid>
+  <Card title="Basic Workflow" icon="rocket">
+    [Complete end-to-end workflow](./basic_workflow) from loading IRFs to
+    detecting a GRB.
+  </Card>
+
+  <Card title="Loading IRFs" icon="open-book">
+    [Working with Instrument Response Functions](./loading_irfs) and the
+    `IRFHouse` class.
+  </Card>
+
+  <Card title="Calculating Sensitivity" icon="puzzle">
+    [Computing sensitivity curves](./calculating_sensitivity) for different
+    observing conditions.
+  </Card>
+
+  <Card title="Simulating Observations" icon="star">
+    [Simulating GRB observations](./simulating_observations) and determining
+    detection times.
+  </Card>
+
+  <Card title="Followup Analysis" icon="magnifier">
+    [Quick exposure calculations](./followup_analysis) using pre-computed lookup
+    tables.
+  </Card>
+</CardGrid>
+
+## Before You Start
+
+Make sure you have:
+
+1. **Installed sensipy** - See the [Installation Guide](/getting_started/installation)
+2. **Downloaded IRF files** - See the [Setup Guide](/getting_started/setup)
+3. **Basic Python knowledge** - Familiarity with Python, numpy, and astropy units
+
+## Tutorial Structure
+
+Each tutorial follows this pattern:
+
+- **Objective**: What you'll learn
+- **Prerequisites**: Required data and setup
+- **Step-by-step code**: Complete, runnable examples
+- **Expected output**: What you should see
+- **Further reading**: Related documentation
+
+## Getting Help
+
+If you encounter issues:
+
+- Check the [API Reference](/reference/) for detailed method documentation
+- Review the [Getting Started](/getting_started/overview) guides
+- Consult the [Troubleshooting sections](#) in each tutorial
+
+## Next Steps
+
+Start with the [Basic Workflow](./basic_workflow) tutorial to get an overview of sensipy's capabilities, then explore specific topics based on your needs.

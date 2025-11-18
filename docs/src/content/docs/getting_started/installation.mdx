@@ -1,0 +1,80 @@
+---
+title: Installation
+description: How to install the sensipy package.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+## Installation options
+
+Our package is available on PyPI and can be installed using various methods.
+
+<Aside>
+    <p>
+        Python 3.11+ is required for installation.
+    </p>
+</Aside>
+
+### Installing with `uv` (recommended)
+
+`uv` is a tool for managing Python projects and dependencies. It is a modern alternative to `pip` and `venv`, and is lighter and faster than `conda`. For more information, see the [uv documentation](https://docs.astral.sh/uv/).
+
+#### Adding to an existing `uv` project
+
+```bash
+uv add sensipy
+```
+
+#### Create a new `uv` project
+
+Ininitalize a new project with Python 3.12 (for example), then add the sensipy to the project.
+
+```bash
+uv init -p 3.12
+uv add sensipy
+```
+
+#### Updating the package with `uv`
+
+Update the package to the latest version:
+
+```bash
+uv add -U sensipy
+```
+
+### Installing with `pip`
+
+The sensipy can be installed into any existing Python environment using pip:
+
+```bash
+pip install sensipy
+```
+
+### Installing with `conda`
+
+The sensipy can be installed into any existing conda environment using conda.
+
+1. Make sure `pip` is installed in the environment.
+2. Install the sensipy using pip.
+
+```bash
+conda activate my-environment
+conda install pip
+pip install sensipy
+```
+
+## Testing the installation
+
+To test the installation, you can run the following command:
+
+```bash
+uv run pytest
+```
+
+This will run the test suite and ensure that the installation is working correctly.
+
+In a conda environment or a virtual environment, you can simply run:
+
+```bash
+pytest
+```

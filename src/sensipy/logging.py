@@ -19,8 +19,8 @@ class logger:
         critical(self, message: str) -> None: Log a critical message.
 
     Example:
-        >>> from gravitational_wave_toy.logging import logger
-        >>> log = logger(name='test', filename='./gwtoy.log')
+        >>> from sensipy.logging import logger
+        >>> log = logger(name='test', filename='./sensipy.log')
         >>> log.debug('This is a debug message')
         >>> log.info('This is an info message')
         >>> log.warning('This is a warning message')
@@ -31,7 +31,7 @@ class logger:
     def __init__(
         self,
         name: str,
-        filename: str = "./gwtoy.log",
+        filename: str = "./sensipy.log",
         level: int = logging.INFO,
         file_level: int = logging.DEBUG,
     ) -> None:

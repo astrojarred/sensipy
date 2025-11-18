@@ -3,7 +3,7 @@
 import logging
 import warnings
 
-from gravitational_wave_toy.util import suppress_warnings_and_logs
+from sensipy.util import suppress_warnings_and_logs
 
 
 def test_suppress_warnings_and_logs_with_logging_ok():

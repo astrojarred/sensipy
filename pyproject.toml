@@ -1,7 +1,7 @@
 [project]
-name = "gravitational-wave-toy"
+name = "sensipy"
 version = "3.6.1"
-description = "Add your description here"
+description = "Calculate sensitivity curves and observation times for variable high-energy astrophysical sources"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [

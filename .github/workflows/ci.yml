@@ -30,9 +30,12 @@ jobs:
       - name: Install dependencies
         run: |
           uv sync --dev
+      - name: Install package in editable mode
+        run: |
+          uv pip install -e .
       - name: Run pytest
         run: |
           uv run pytest -n auto
       - name: Run mypy
         run: |
-          uv run mypy gravitational_wave_toy
+          uv run mypy src/sensipy

@@ -608,7 +608,7 @@ class Source:
                 raise ValueError(
                     "GAMMAPY_DATA environment variable not set. "
                     "Please set it to the path where the EBL data is stored. "
-                    "You can copy EBL data from here: https://github.com/astrojarred/gravitational_wave_toy/tree/main/data"
+                    "You can copy EBL data from here: https://github.com/astrojarred/sensipy/tree/main/data"
                 )
 
             self.ebl = EBLAbsorptionNormSpectralModel.read_builtin(

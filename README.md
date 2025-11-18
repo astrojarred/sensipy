@@ -1,17 +1,17 @@
 <p align="center">
   <a href="" rel="noopener">
- <img style="width: 200px; height: 200px; max-width: 100%;" src="images/project_logo.png" src="images/project_logo.png" alt="GW Toy logo"
+ <img style="width: 200px; height: 200px; max-width: 100%;" src="images/project_logo.png" src="images/project_logo.png" alt="sensipy logo"
  ></a>
 </p>
 
-<h3 align="center">Gravitational Wave Toy</h3>
+<h3 align="center">Sensipy</h3>
 
 <div align="center">
 
 [![Status](https://img.shields.io/badge/status-active-success.svg)]()
-[![GitHub Issues](https://img.shields.io/github/issues/astrojarred/gravitational_wave_toy.svg)](https://github.com/astrojarred/gravitational_wave_toy/issues)
-[![GitHub Pull Requests](https://img.shields.io/github/issues-pr/astrojarred/gravitational_wave_toy.svg)](https://github.com/astrojarred/gravitational_wave_toy/pulls)
-![GitHub License](https://img.shields.io/github/license/astrojarred/gravitational_wave_toy)
+[![GitHub Issues](https://img.shields.io/github/issues/astrojarred/sensipy.svg)](https://github.com/astrojarred/sensipy/issues)
+[![GitHub Pull Requests](https://img.shields.io/github/issues-pr/astrojarred/sensipy.svg)](https://github.com/astrojarred/sensipy/pulls)
+![GitHub License](https://img.shields.io/github/license/astrojarred/sensipy)
 
 
 </div>
@@ -25,7 +25,7 @@
 
 - [About](#about)
 - [Getting Started](#getting_started)
-- [Authors](#️authors)
+- [Maintainers](#maintainers)
 - [Instructions](#instructions)
   - [GW Observations](#instructions-gw-obs)
     - [Example Simulation](#example-simulation)
@@ -49,7 +49,7 @@ In addition, you need a python installation and the packages outlines in `pyproj
 
 Note: dask is only necessary to read in the output data with the `plot` class.
 
-## ✍️ Authors<a name = "Maintainers"></a>
+## ✍️ Maintainers<a name = "maintainers"></a>
 
 - [Jarred Green](https://github.com/astrojarred) (jgreen at mpp.mpg.de)
 - Barbara Patricelli (barbara.patricelli at pi.infn.it)
@@ -99,9 +99,9 @@ This code simulates observations of simulated gravitational wave events to deter
 ```python
 from astropy import units as u
 
-from gravitational_wave_toy.ctairf import IRFHouse
-from gravitational_wave_toy.observe import GRB
-from gravitational_wave_toy.sensitivity import SensitivityCtools, SensitivityGammapy
+from sensipy.ctairf import IRFHouse
+from sensipy.observe import GRB
+from sensipy.sensitivity import SensitivityCtools, SensitivityGammapy
 
 # create a home for all your IRFs
 house = IRFHouse(base_directory="./CTA-IRFs")
@@ -154,7 +154,7 @@ print(f"Observation time at delay={delay_time} is {res_ebl['obs_time']} with EBL
 ```python
 import astropy.units as u
 import pandas as pd
-from gravitational_wave_toy import followup
+from sensipy import followup
 
 lookup_talbe = "./O5_gammapy_observations_v4.parquet"
 
@@ -235,7 +235,7 @@ This code creates heatmaps from the results of the `gwobserve` method (stored as
 
 ```python
 # import the data
-from gravitational_wave_toy import gwplot
+from sensipy import gwplot
 gws = gwplot.GWData("/path/to/data/file.parquet")  # or CSV
 
 gws.df  # view the underlying dask dataframe

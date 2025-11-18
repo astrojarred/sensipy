@@ -4,7 +4,7 @@ from_server/
 poetry.lock
 missing_mergers/
 debug_results/
-gravitational_wave_toy/old/
+sensipy/old/
 notebooks/celery-test/
 CTA_sensitivity/
 20*.fits
