@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from gravitational_wave_toy import followup
+from sensipy import followup
 
 
 def test_get_row_found(sample_sensitivity_df):

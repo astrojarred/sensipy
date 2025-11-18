@@ -472,7 +472,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "gravitational-wave-toy"
+name = "sensipy"
 version = "3.6.1"
 source = { virtual = "." }
 dependencies = [

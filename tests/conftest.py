@@ -9,7 +9,7 @@ from urllib.request import urlretrieve
 
 import pytest
 
-from gravitational_wave_toy.ctaoirf import IRFHouse
+from sensipy.ctaoirf import IRFHouse
 
 
 @pytest.fixture

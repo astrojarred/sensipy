@@ -4,7 +4,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from gravitational_wave_toy.plot import GWData
+from sensipy.plot import GWData
 
 
 def test_gwdata_init_with_csv(mock_csv_path):

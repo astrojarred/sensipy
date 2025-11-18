@@ -2,7 +2,7 @@
 
 import pytest
 
-from gravitational_wave_toy.ctaoirf import (
+from sensipy.ctaoirf import (
     IRF,
     Azimuth,
     Configuration,

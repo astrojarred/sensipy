@@ -4,14 +4,14 @@ import logging
 import tempfile
 from pathlib import Path
 
-from gravitational_wave_toy.logging import logger
+from sensipy.logging import logger
 
 
 def test_logger_initialization():
     """Test logger initialization with default parameters."""
     log = logger(name="test_logger")
     assert log.name == "test_logger"
-    assert log.filename == "./gwtoy.log"
+    assert log.filename == "./sensipy.log"
     assert log.level == logging.INFO
     assert log.file_level == logging.DEBUG
     assert log.logger is not None

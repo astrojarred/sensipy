@@ -4,7 +4,7 @@ import astropy.units as u
 import numpy as np
 import pytest
 
-from gravitational_wave_toy.sensitivity import ScaledTemplateModel, Sensitivity
+from sensipy.sensitivity import ScaledTemplateModel, Sensitivity
 
 
 def test_scaled_template_model_initialization():
@@ -361,7 +361,7 @@ def test_sensitivity_get_sensitivity_curve(irf_house, mock_csv_path):
     
     This test matches the usage pattern from quick-test.ipynb (lines 1-2).
     """
-    from gravitational_wave_toy.source import Source
+    from sensipy.source import Source
 
     # Load in the desired IRF (matching quick-test.ipynb)
     irf = irf_house.get_irf(

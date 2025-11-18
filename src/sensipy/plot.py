@@ -8,7 +8,7 @@ import seaborn as sns
 from matplotlib.colors import LogNorm
 
 
-from gravitational_wave_toy.logging import logger
+from sensipy.logging import logger
 
 log = logger(__name__)
 
