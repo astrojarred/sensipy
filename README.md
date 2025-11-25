@@ -9,7 +9,7 @@
 
 Sensipy is a Python toolkit for simulating gamma-ray follow-up observations of time-variable astrophysical sources. First built for CTAO-style analyses, it builds on top of [gammapy](https://gammapy.org/)` and streamlines everything from IRF handling to exposure lookups.
 
-The full documentation is available at [astrojarred.github.io/sensipy](https://astrojarred.github.io/sensipy).
+The full documentation is available at [sensipy.vercel.app](https://sensipy.vercel.app/).
 
 <img src="docs/src/assets/sensipy-logo.svg" alt="Sensipy logo" style="max-width: min(60%, 800px); display: block; margin: 0 auto;">
 
