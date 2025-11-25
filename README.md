@@ -11,7 +11,7 @@ Sensipy is a Python toolkit for simulating gamma-ray follow-up observations of t
 
 The full documentation is available at [sensipy.vercel.app](https://sensipy.vercel.app/).
 
-<img src="docs/src/assets/sensipy-logo.svg" alt="Sensipy logo" style="max-width: min(60%, 800px); display: block; margin: 0 auto;">
+<img src="https://raw.githubusercontent.com/astrojarred/sensipy/main/images/sensipy-logo.svg" alt="Sensipy logo" style="max-width: min(60%, 800px); display: block; margin: 0 auto;">
 
 ## Features
 
