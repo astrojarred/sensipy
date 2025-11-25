@@ -3,7 +3,7 @@ name = "sensipy"
 version = "4.0-beta.1"
 description = "Toolkit for simulating gamma-ray follow-up observations of time-variable astrophysical sources."
 authors = [
-    { name = "Jarred Green", email = "jarred.green@inaf.it" },
+    { name = "Jarred Green", email = "jgreen@mpp.mpg.de" },
     { name = "Barbara Patricelli", email = "barbara.patricelli@inaf.it" },
     { name = "Antonio Stamerra", email = "antonio.stamerra@inaf.it" },
     { name = "Monica Seglar-Arroyo", email = "mseglar@ifae.es" },
