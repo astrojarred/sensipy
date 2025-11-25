@@ -7,7 +7,7 @@
 [![GitHub Pull Requests](https://img.shields.io/github/issues-pr/astrojarred/sensipy.svg)](https://github.com/astrojarred/sensipy/pulls)
 [![License](https://img.shields.io/github/license/astrojarred/sensipy)](LICENSE)
 
-Sensipy is a Python toolkit for simulating very-high-energy gamma-ray follow-up observations of gravitational wave events. It focuses on CTAO-style analyses, builds on top of [gammapy](https://gammapy.org/)`, and streamlines everything from IRF handling to exposure lookups.
+Sensipy is a Python toolkit for simulating gamma-ray follow-up observations of time-variable astrophysical sources. First built for CTAO-style analyses, it builds on top of [gammapy](https://gammapy.org/)` and streamlines everything from IRF handling to exposure lookups.
 
 The full documentation is available at [astrojarred.github.io/sensipy](https://astrojarred.github.io/sensipy).
 
