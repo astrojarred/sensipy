@@ -1,9 +1,38 @@
 [project]
 name = "sensipy"
-version = "3.6.1"
-description = "Calculate sensitivity curves and observation times for variable high-energy astrophysical sources"
+version = "4.0-beta.0"
+description = "Toolkit for simulating gamma-ray follow-up observations of time-variable astrophysical sources."
+authors = [
+    { name = "Jarred Green", email = "jarred.green@inaf.it" },
+    { name = "Barbara Patricelli", email = "barbara.patricelli@inaf.it" },
+    { name = "Antonio Stamerra", email = "antonio.stamerra@inaf.it" },
+    { name = "Monica Seglar-Arroyo", email = "mseglar@ifae.es" },
+]
+
 readme = "README.md"
 requires-python = ">=3.11"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Astronomy",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+keywords = [
+    "gamma-ray",
+    "astronomy",
+    "astrophysics",
+    "cherenkov",
+    "gamma-ray astronomy"
+]
+license = "Apache-2.0"
+license-files = ["LICEN[CS]E*"]
+
 dependencies = [
     "astropy>=6.0",
     "matplotlib>=3.8,<3.10",
@@ -20,6 +49,11 @@ dependencies = [
     "scipy-stubs>=1.16.3.0",
     "pytest-xdist[psutil]>=3.8.0",
 ]
+
+[project.urls]
+Documentation = "https://sensipy.vercel.app/"
+Source = "https://github.com/astrojarred/sensipy"
+Tracker = "https://github.com/astrojarred/sensipy/issues"
 
 [dependency-groups]
 dev = [
@@ -40,11 +74,9 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-addopts = [
-    "-v",
-    "--strict-markers",
-    "--tb=short",
-]
-markers = [
-    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-]
+addopts = ["-v", "--strict-markers", "--tb=short"]
+markers = ["slow: marks tests as slow (deselect with '-m \"not slow\"')"]
+
+[build-system]
+requires = ["uv_build >= 0.9.9, <0.10.0"]
+build-backend = "uv_build"
