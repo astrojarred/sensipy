@@ -41,7 +41,7 @@ dependencies = [
     "scipy>=1.16.2",
     "seaborn>=0.13.0",
     "tqdm>=4.67.1",
-    "gammapy @ git+https://github.com/gammapy/gammapy.git@v1.2",
+    "gammapy==1.2",
     "pyarrow>=21.0.0",
     "numpy>=1.26.4",
     "types-seaborn>=0.13.2.20250914",

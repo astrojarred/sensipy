@@ -458,7 +458,7 @@ wheels = [
 [[package]]
 name = "gammapy"
 version = "1.2"
-source = { git = "https://github.com/gammapy/gammapy.git?rev=v1.2#2a70d230b8f61059d20e400e730ccf2ac0503361" }
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "astropy" },
     { name = "click" },
@@ -470,6 +470,7 @@ dependencies = [
     { name = "regions" },
     { name = "scipy" },
 ]
+sdist = { url = "https://files.pythonhosted.org/packages/2f/70/57d8e438ecbe2c9956fa82ff1a5ffcc6e40df4c20e4aae4af42144eda9e6/gammapy-1.2.tar.gz", hash = "sha256:b853362299efee8ba6cdcb66d92affb20b6f331e203728149281a89e44a6ae36", size = 3716980, upload-time = "2024-02-29T10:14:49.384Z" }
 
 [[package]]
 name = "iminuit"
@@ -1708,8 +1709,8 @@ wheels = [
 
 [[package]]
 name = "sensipy"
-version = "3.6.1"
-source = { virtual = "." }
+version = "4.0b0"
+source = { editable = "." }
 dependencies = [
     { name = "astropy" },
     { name = "gammapy" },
@@ -1740,7 +1741,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "astropy", specifier = ">=6.0" },
-    { name = "gammapy", git = "https://github.com/gammapy/gammapy.git?rev=v1.2" },
+    { name = "gammapy", specifier = "==1.2" },
     { name = "matplotlib", specifier = ">=3.8,<3.10" },
     { name = "numpy", specifier = ">=1.26.4" },
     { name = "pandas", specifier = ">=2.3.3" },
