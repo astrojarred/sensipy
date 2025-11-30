@@ -64,7 +64,6 @@ class ScaledTemplateModel(TemplateSpectralModel):
             scaling_factor,
             unit="1 / (TeV s cm2)",
             interp="log",
-            is_norm=True,
         )
 
         self._original_values = None  # Initialize before calling super
@@ -1016,7 +1015,7 @@ class Sensitivity:
             dataset_on_off = bkg_maker.run(dataset, irfs["obs"])
 
         sensitivity_estimator = SensitivityEstimator(
-            spectrum=model,
+            spectral_model=model,
             gamma_min=gamma_min,
             n_sigma=sigma,
             bkg_syst_fraction=bkg_syst_fraction,

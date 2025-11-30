@@ -89,7 +89,7 @@ This tutorial demonstrates the complete workflow for simulating a gravitational 
    # Initialize sensitivity calculator
    sens = SensitivityGammapy(
        irf=irf,
-       observatory=f"cta_{irf.site.name}",  # "cta_south"
+       observatory=f"ctao_{irf.site.name}",  # "ctao_south"
        min_energy=min_energy,
        max_energy=max_energy,
        radius=3.0 * u.deg,  # Extraction region radius for point sources
@@ -188,7 +188,7 @@ grb = Source(
 # 3. Create sensitivity calculator
 sens = SensitivityGammapy(
     irf=irf,
-    observatory=f"cta_{irf.site.name}",
+    observatory=f"ctao_{irf.site.name}",
     min_energy=min_energy,
     max_energy=max_energy,
     radius=3.0 * u.deg,

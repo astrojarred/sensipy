@@ -54,7 +54,7 @@ irf = house.get_irf(
 # Create sensitivity calculator
 sensitivity = SensitivityGammapy(
     irf=irf,
-    observatory=f"cta_{irf.site.name}",  # "cta_south"
+    observatory=f"ctao_{irf.site.name}",  # "ctao_south"
     min_energy=20 * u.GeV,
     max_energy=10 * u.TeV,
     radius=3.0 * u.deg,  # Region of interest radius
@@ -66,7 +66,7 @@ sensitivity = SensitivityGammapy(
 | Parameter              | Description                  | Typical Value                  |
 | ---------------------- | ---------------------------- | ------------------------------ |
 | `irf`                  | Instrument response function | From `IRFHouse`                |
-| `observatory`          | Observatory name             | `"cta_south"` or `"cta_north"` |
+| `observatory`          | Observatory name             | `"ctao_south"` or `"ctao_north"` |
 | `min_energy`           | Minimum energy               | `20 GeV` or `0.02 TeV`         |
 | `max_energy`           | Maximum energy               | `10 TeV`                       |
 | `radius`               | Extraction region radius     | `3.0 deg` (for point sources)  |
@@ -94,7 +94,7 @@ Once you have a `Source` object with a time-resolved spectrum, you can compute t
     # Create sensitivity calculator
     sens = SensitivityGammapy(
         irf=irf,
-        observatory="cta_south",
+        observatory="ctao_south",
         min_energy=20 * u.GeV,
         max_energy=10 * u.TeV,
         radius=3.0 * u.deg,
@@ -118,7 +118,7 @@ Once you have a `Source` object with a time-resolved spectrum, you can compute t
     # Specify custom time range
     sens = SensitivityGammapy(
         irf=irf,
-        observatory="cta_south",
+        observatory="ctao_south",
         min_energy=20 * u.GeV,
         max_energy=10 * u.TeV,
         radius=3.0 * u.deg,
@@ -145,7 +145,7 @@ Once you have a `Source` object with a time-resolved spectrum, you can compute t
 
     sens = SensitivityGammapy(
         irf=irf,
-        observatory="cta_south",
+        observatory="ctao_south",
         min_energy=20 * u.GeV,
         max_energy=10 * u.TeV,
         radius=3.0 * u.deg,
@@ -283,7 +283,7 @@ scaled_model.scaling_factor = 0.5  # Reduce flux by 50%
 
    sens = SensitivityGammapy(
        irf=irf,
-       observatory="cta_south",
+       observatory="ctao_south",
        min_energy=20 * u.GeV,
        max_energy=10 * u.TeV,
        radius=3.0 * u.deg,

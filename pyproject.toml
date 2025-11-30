@@ -35,13 +35,13 @@ license-files = ["LICEN[CS]E*"]
 
 dependencies = [
     "astropy>=6.0",
-    "matplotlib>=3.8,<3.10",
+    "matplotlib>=3.8",
     "pandas>=2.3.3",
     "pydantic>=2.12.0",
     "scipy>=1.16.2",
     "seaborn>=0.13.0",
     "tqdm>=4.67.1",
-    "gammapy==1.2",
+    "gammapy>=2.0",
     "pyarrow>=21.0.0",
     "numpy>=1.26.4",
     "types-seaborn>=0.13.2.20250914",
@@ -78,5 +78,5 @@ addopts = ["-v", "--strict-markers", "--tb=short"]
 markers = ["slow: marks tests as slow (deselect with '-m \"not slow\"')"]
 
 [build-system]
-requires = ["uv_build >= 0.9.9, <0.10.0"]
+requires = ["uv_build >= 0.9.9"]
 build-backend = "uv_build"
