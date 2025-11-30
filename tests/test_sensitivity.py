@@ -82,7 +82,7 @@ def test_sensitivity_initialization_with_curves():
     photon_flux_curve = np.logspace(-9, -11, 10) * u.Unit("cm-2 s-1")
 
     sens = Sensitivity(
-        observatory="cta_north",
+        observatory="ctao_north",
         radius=3.0 * u.deg,
         min_energy=0.02 * u.TeV,
         max_energy=10.0 * u.TeV,
@@ -91,7 +91,7 @@ def test_sensitivity_initialization_with_curves():
         photon_flux_curve=photon_flux_curve,
     )
 
-    assert sens.observatory == "cta_north"
+    assert sens.observatory == "ctao_north"
     assert sens.radius == 3.0 * u.deg
     assert sens.min_energy == 0.02 * u.TeV
     assert sens.max_energy == 10.0 * u.TeV
@@ -104,7 +104,7 @@ def test_sensitivity_initialization_missing_curves():
         match="Must provide either irf, sensitivity_curve or photon_flux_curve.",
     ):
         Sensitivity(
-            observatory="cta_north",
+            observatory="ctao_north",
             radius=3.0 * u.deg,
             min_energy=0.02 * u.TeV,
             max_energy=10.0 * u.TeV,
@@ -119,7 +119,7 @@ def test_sensitivity_initialization_invalid_energy():
 
     with pytest.raises(ValueError, match="e_min must be an energy quantity"):
         Sensitivity(
-            observatory="cta_north",
+            observatory="ctao_north",
             radius=3.0 * u.deg,
             min_energy=1.0 * u.s,  # Wrong unit
             max_energy=10.0 * u.TeV,
@@ -135,7 +135,7 @@ def test_sensitivity_get_sensitivity_mode():
     photon_flux_curve = np.logspace(-9, -11, 10) * u.Unit("cm-2 s-1")
 
     sens = Sensitivity(
-        observatory="cta_north",
+        observatory="ctao_north",
         radius=3.0 * u.deg,
         min_energy=0.02 * u.TeV,
         max_energy=10.0 * u.TeV,
@@ -157,7 +157,7 @@ def test_sensitivity_get_photon_flux_mode():
     photon_flux_curve = np.logspace(-9, -11, 10) * u.Unit("cm-2 s-1")
 
     sens = Sensitivity(
-        observatory="cta_north",
+        observatory="ctao_north",
         radius=3.0 * u.deg,
         min_energy=0.02 * u.TeV,
         max_energy=10.0 * u.TeV,
@@ -179,7 +179,7 @@ def test_sensitivity_get_invalid_mode():
     photon_flux_curve = np.logspace(-9, -11, 10) * u.Unit("cm-2 s-1")
 
     sens = Sensitivity(
-        observatory="cta_north",
+        observatory="ctao_north",
         radius=3.0 * u.deg,
         min_energy=0.02 * u.TeV,
         max_energy=10.0 * u.TeV,
@@ -198,7 +198,7 @@ def test_sensitivity_get_invalid_time():
     photon_flux_curve = np.logspace(-9, -11, 10) * u.Unit("cm-2 s-1")
 
     sens = Sensitivity(
-        observatory="cta_north",
+        observatory="ctao_north",
         radius=3.0 * u.deg,
         min_energy=0.02 * u.TeV,
         max_energy=10.0 * u.TeV,
@@ -217,7 +217,7 @@ def test_sensitivity_get_numeric_time():
     photon_flux_curve = np.logspace(-9, -11, 10) * u.Unit("cm-2 s-1")
 
     sens = Sensitivity(
-        observatory="cta_north",
+        observatory="ctao_north",
         radius=3.0 * u.deg,
         min_energy=0.02 * u.TeV,
         max_energy=10.0 * u.TeV,
@@ -237,7 +237,7 @@ def test_sensitivity_get_missing_curve():
 
     # Create Sensitivity with only photon_flux_curve, not sensitivity_curve
     sens = Sensitivity(
-        observatory="cta_north",
+        observatory="ctao_north",
         radius=3.0 * u.deg,
         min_energy=0.02 * u.TeV,
         max_energy=10.0 * u.TeV,
@@ -263,7 +263,7 @@ def test_sensitivity_sensitivity_curve_property():
     photon_flux_curve = np.logspace(-9, -11, 10) * u.Unit("cm-2 s-1")
 
     sens = Sensitivity(
-        observatory="cta_north",
+        observatory="ctao_north",
         radius=3.0 * u.deg,
         min_energy=0.02 * u.TeV,
         max_energy=10.0 * u.TeV,
@@ -282,7 +282,7 @@ def test_sensitivity_photon_flux_curve_property():
     photon_flux_curve = np.logspace(-9, -11, 10) * u.Unit("cm-2 s-1")
 
     sens = Sensitivity(
-        observatory="cta_north",
+        observatory="ctao_north",
         radius=3.0 * u.deg,
         min_energy=0.02 * u.TeV,
         max_energy=10.0 * u.TeV,
@@ -301,7 +301,7 @@ def test_sensitivity_table_property_empty():
     photon_flux_curve = np.logspace(-9, -11, 10) * u.Unit("cm-2 s-1")
 
     sens = Sensitivity(
-        observatory="cta_north",
+        observatory="ctao_north",
         radius=3.0 * u.deg,
         min_energy=0.02 * u.TeV,
         max_energy=10.0 * u.TeV,
@@ -319,7 +319,7 @@ def test_sensitivity_pandas_property_empty():
     photon_flux_curve = np.logspace(-9, -11, 10) * u.Unit("cm-2 s-1")
 
     sens = Sensitivity(
-        observatory="cta_north",
+        observatory="ctao_north",
         radius=3.0 * u.deg,
         min_energy=0.02 * u.TeV,
         max_energy=10.0 * u.TeV,
@@ -337,7 +337,7 @@ def test_sensitivity_extrapolation():
     photon_flux_curve = np.logspace(-9, -11, 10) * u.Unit("cm-2 s-1")
 
     sens = Sensitivity(
-        observatory="cta_north",
+        observatory="ctao_north",
         radius=3.0 * u.deg,
         min_energy=0.02 * u.TeV,
         max_energy=10.0 * u.TeV,
@@ -379,7 +379,7 @@ def test_sensitivity_get_sensitivity_curve(irf_house, mock_csv_path):
 
     sens = Sensitivity(
         irf=irf,
-        observatory=f"cta_{irf.site.name}",
+        observatory=f"ctao_{irf.site.name}",
         min_energy=min_energy,
         max_energy=max_energy,
         radius=3.0 * u.deg,
@@ -437,7 +437,7 @@ def test_estimate_differential_sensitivity(irf_house):
     # Call estimate_differential_sensitivity
     sensitivity_table = Sensitivity.estimate_differential_sensitivity(
         irf=irf.filepath,
-        observatory=f"cta_{irf.site.name}",
+        observatory=f"ctao_{irf.site.name}",
         duration=1800 * u.s,
         radius=3.0 * u.deg,
         min_energy=0.03 * u.TeV,

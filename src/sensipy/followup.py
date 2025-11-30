@@ -239,7 +239,7 @@ def get_sensitivity(
         )
 
     sens = sensitivity.Sensitivity(
-        observatory=f"cta_{site}",
+        observatory=f"ctao_{site}",
         radius=radius,
         min_energy=min_energy,
         max_energy=max_energy,

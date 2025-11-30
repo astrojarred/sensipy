@@ -142,7 +142,7 @@ def test_get_sensitivity_from_sens_df(sample_sensitivity_df):
     )
     
     assert sens is not None
-    assert sens.observatory == "cta_north"
+    assert sens.observatory == "ctao_north"
     assert len(sens.sensitivity_curve) > 0
     assert len(sens.photon_flux_curve) > 0
 
@@ -164,7 +164,7 @@ def test_get_sensitivity_from_curves():
     )
     
     assert sens is not None
-    assert sens.observatory == "cta_north"
+    assert sens.observatory == "ctao_north"
 
 
 def test_get_sensitivity_conflicting_inputs(sample_sensitivity_df):

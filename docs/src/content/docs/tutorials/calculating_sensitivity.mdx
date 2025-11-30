@@ -51,7 +51,7 @@ Learn how to calculate sensitivity curves that determine the minimum detectable 
    ```python
    sens = SensitivityGammapy(
        irf=irf,
-       observatory=f"cta_{irf.site.name}",
+       observatory=f"ctao_{irf.site.name}",
        min_energy=min_energy,
        max_energy=max_energy,
        radius=3.0 * u.deg,  # Extraction region
@@ -91,7 +91,7 @@ import astropy.units as u
 
 sens = SensitivityGammapy(
     irf=irf,
-    observatory="cta_south",
+    observatory="ctao_south",
     min_energy=20 * u.GeV,
     max_energy=10 * u.TeV,
     radius=3.0 * u.deg,
@@ -216,7 +216,7 @@ for site, zenith in configs:
     # Calculate sensitivity
     sens = SensitivityGammapy(
         irf=irf,
-        observatory=f"cta_{site}",
+        observatory=f"ctao_{site}",
         min_energy=20 * u.GeV,
         max_energy=10 * u.TeV,
         radius=3.0 * u.deg,
@@ -261,7 +261,7 @@ source_with_ebl = Source(
 )
 
 # Calculate both
-sens = SensitivityGammapy(irf=irf, observatory="cta_south",
+sens = SensitivityGammapy(irf=irf, observatory="ctao_south",
                           min_energy=20*u.GeV, max_energy=10*u.TeV, radius=3.0*u.deg)
 
 sens.get_sensitivity_curve(grb=source_no_ebl)
@@ -297,7 +297,7 @@ photon_flux_values = np.array([...]) * u.Unit("1 / (cm2 s)")
 
 sens = SensitivityGammapy(
     irf=irf,
-    observatory="cta_south",
+    observatory="ctao_south",
     min_energy=20 * u.GeV,
     max_energy=10 * u.TeV,
     radius=3.0 * u.deg,

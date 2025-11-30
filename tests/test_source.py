@@ -348,7 +348,7 @@ def test_source_observe_with_irf(irf_house, mock_csv_path):
 
     sens = Sensitivity(
         irf=irf,
-        observatory=f"cta_{irf.site.name}",
+        observatory=f"ctao_{irf.site.name}",
         min_energy=min_energy,
         max_energy=max_energy,
         radius=3.0 * u.deg,
