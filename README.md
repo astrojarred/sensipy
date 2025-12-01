@@ -40,7 +40,7 @@ Run the unit tests with `uv run pytest` (or `pytest` in any configured environme
 
 ## Documentation
 
-Full documentation, tutorials, and the API reference live at [astrojarred.github.io/sensipy](https://astrojarred.github.io/sensipy) (source in `docs/`). To work on the site locally:
+Full documentation, tutorials, and the API reference live on [the docs](sensipy.vercel.app) (source in `docs/`). To work on the site locally:
 
 ```bash
 cd docs
@@ -66,6 +66,7 @@ Contributions are welcome! Please:
 ## License
 
 Sensipy is distributed under the [Apache 2.0 License](LICENSE).
+
 
 
 
