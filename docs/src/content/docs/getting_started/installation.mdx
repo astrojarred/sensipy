@@ -63,17 +63,29 @@ conda install pip
 pip install sensipy
 ```
 
-## Testing the installation
+## Verifying the installation
 
-To test the installation, you can run the following command:
+To verify that sensipy is installed correctly, you can run:
 
 ```bash
+python -c "import sensipy; print(sensipy.__version__)"
+```
+
+## Running the test suite
+
+<Aside type="note">
+    Running tests requires cloning the repository, as the test files are not included in the PyPI package.
+</Aside>
+
+If you've cloned the repository for development, you can run the test suite with:
+
+```bash
+git clone https://github.com/astrojarred/sensipy.git
+cd sensipy
 uv run pytest
 ```
 
-This will run the test suite and ensure that the installation is working correctly.
-
-In a conda environment or a virtual environment, you can simply run:
+Or in a conda environment or a virtual environment with the development dependencies installed:
 
 ```bash
 pytest
