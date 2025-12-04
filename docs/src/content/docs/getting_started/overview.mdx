@@ -7,31 +7,29 @@ import {Aside, Card, CardGrid} from "@astrojs/starlight/components";
 
 ## What is sensipy?
 
-**sensipy** is a Python package for simulating very-high-energy (VHE) gamma-ray follow-up observations of gravitational wave (GW) events. It is specifically designed to work with the Cherenkov Telescope Array Observatory (CTAO) and builds on top of [Gammapy](https://gammapy.org/), the open-source Python package for gamma-ray astronomy.
-
-The package enables researchers to determine under which circumstances electromagnetic counterparts to gravitational wave events could be detectable by gamma-ray observatories, particularly in the TeV energy range.
-
-<Aside type="tip">
-  For more information about the science background, check out the [ICRC 2023
-  proceedings](https://arxiv.org/abs/2310.07413).
-</Aside>
+**sensipy** is a Python toolkit for simulating gamma-ray follow-up observations of time-variable astrophysical sources. It is specifically designed to work with many different instruments and builds on top of [gammapy](https://gammapy.org/), the open-source Python package for gamma-ray astronomy.
 
 ## Scientific Background
 
-The detection of gravitational waves has opened a new window to the universe. When compact objects like neutron stars or black holes merge, they can produce both gravitational waves and electromagnetic radiation across multiple wavelengths. **sensipy** helps answer the question: _Can we detect the very-high-energy gamma-ray emission from these events?_
+Many of the most exciting astrophysical phenomena are transient—gamma-ray bursts, flaring active galactic nuclei, novae, and electromagnetic counterparts to gravitational wave events all evolve on timescales from seconds to days. **sensipy** helps answer a fundamental question: _Given a source that changes with time, can we detect it with a gamma-ray telescope?_
 
-The package simulates how quickly a gamma-ray observatory like CTA could detect a transient source given:
+The package helps to simulate how quickly a gamma-ray telescope can detect a time-variable source given the following inputs:
 
 - A time-evolving spectral energy distribution (SED)
 - Instrument response functions (IRFs) for specific observing conditions
 - Realistic observational constraints (delays, exposure times, sensitivity limits)
+
+<Aside type="note">
+  Among other things, this package enables researchers to determine under which circumstances electromagnetic counterparts to gravitational wave events could be detectable by gamma-ray observatories, particularly in the TeV energy range. For more information about the original science motivation behind `sensipy`, check out the [ICRC 2023
+  proceedings](https://arxiv.org/abs/2310.07413).
+</Aside>
 
 ## Main Features
 
 <CardGrid>
   <Card title="Sensitivity Calculations" icon="puzzle">
     Calculate differential or integral sensitivity curves for gamma-ray
-    observatories using instrument response functions and spectral models.
+    observatories using instrument response functions and spectral models. For example, you can produce plots like the [Sensitivity vs Observation Time curves of CTAO](https://www.ctao.org/for-scientists/performance/#:~:text=Sensitivity%20vs%20Observation%20Time) page.
   </Card>
 
   <Card title="Exposure Time Simulation" icon="approve-check">
@@ -72,7 +70,7 @@ A typical workflow with sensipy involves:
 
 sensipy is particularly useful for:
 
-- **Mission planning**: Determining optimal observing strategies for GW followup campaigns
+- **Mission planning**: Determining optimal observing strategies for gamma-ray followup campaigns
 - **Sensitivity studies**: Understanding detection prospects for different source models and observing conditions
-- **Heatmap generation**: Creating visualizations showing detection fractions across parameter space
-- **Quick lookups**: Using pre-computed databases to rapidly assess detectability during GW alerts
+- **Heatmap generation**: Creating visualizations showing detection fractions across your parameter space
+- **Quick lookups**: Using pre-computed lookup tables to rapidly assess detectability during transient alerts
