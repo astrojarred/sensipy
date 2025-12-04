@@ -5,7 +5,13 @@ description: Setting up IRFs, EBL models, and data files for sensipy.
 
 import {Aside, Steps, FileTree} from "@astrojs/starlight/components";
 
-After installing sensipy, you'll need to set up the required data files to use the package effectively. This guide covers downloading and organizing Instrument Response Functions (IRFs), EBL models, and spectral model data.
+After installing sensipy, you'll need to set up the required data files to use the package effectively.
+
+**Setup checklist:**
+
+- [ ] **Compatible IRFs** — CTAO IRFs (for example) are freely available on Zenodo *(required)*
+- [ ] **EBL models** — Included with package *(no action needed unless you want to use a different EBL model)*
+- [ ] **Spectral models** — Example data included *(bring your own for real analysis)*
 
 ## Instrument Response Functions (IRFs)
 
@@ -16,12 +22,11 @@ IRFs define the sensitivity and performance characteristics of a gamma-ray obser
 sensipy supports the following CTA IRF productions:
 
 - **prod5-v0.1** (Alpha Configuration, recommended for most use cases)
-- **prod5-v0.2** (Alpha, Omega, and Alpha-LST configurations)
 - **prod3b-v2** (Legacy support)
 
 <Aside type="tip">
   The most recent Alpha configuration IRFs are **prod5-v0.1**, which can be
-  found on [Zenodo](https://zenodo.org/records/5499840).
+  found on [Zenodo](https://zenodo.org/records/5499840). The `fitsonly` version is enough for use with **sensipy**.
 </Aside>
 
 ### Downloading IRFs
@@ -57,9 +62,6 @@ Organize your IRF files following this structure:
       - CTA-Performance-prod5-v0.1-North-20deg.FITS.tar.gz
       - CTA-Performance-prod5-v0.1-South-20deg.FITS.tar.gz
       - CTA-Performance-prod5-v0.1-North-40deg.FITS.tar.gz
-      - ...
-  - prod5-v0.2/
-    - fits/
       - ...
   - prod3b-v2/
     - fits/
