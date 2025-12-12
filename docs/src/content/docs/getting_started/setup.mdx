@@ -93,7 +93,7 @@ Organize your IRF files following this structure:
 
 <Aside type="caution">
   When initializing the `IRFHouse` class, you'll provide the path to the root
-  directory (e.g., `CTA-IRFs/`). The package expects this specific directory
+  directory (e.g., `IRFs/CTAO/`). The package expects this specific directory
   structure.
 </Aside>
 
@@ -104,7 +104,7 @@ from sensipy.ctaoirf import IRFHouse
 
 # Create an IRF house pointing to your IRF directory
 # CHECK: Ensure this path points to your actual IRF directory
-house = IRFHouse(base_directory="./CTA-IRFs")
+house = IRFHouse(base_directory="./IRFs/CTAO")
 
 # Load a specific IRF
 irf = house.get_irf(
