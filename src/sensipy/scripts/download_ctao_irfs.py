@@ -9,8 +9,8 @@ Usage:
     sensipy-download-irfs --output-dir ./IRFs
 
     # Or programmatically
-    from sensipy.scripts.download_irfs import download_irfs
-    download_irfs(output_dir="./IRFs")
+    from sensipy.scripts.download_ctao_irfs import download_ctao_irfs
+    download_ctao_irfs(output_dir="./IRFs")
 """
 
 import argparse
@@ -118,8 +118,8 @@ def flatten_nested_directory(version_dir: Path, nested_name: str) -> None:
         nested_dir.rmdir()
 
 
-def download_irfs(
-    output_dir: str | Path = "./IRFs",
+def download_ctao_irfs(
+    output_dir: str | Path = "./IRFs/CTAO",
     versions: list[str] | None = None,
     force: bool = False,
     keep_zip: bool = False,
@@ -130,7 +130,7 @@ def download_irfs(
     Args:
         output_dir: Directory to save the IRFs (default: ./IRFs)
         versions: List of versions to download. If None, downloads all available versions.
-                  Available versions: 'prod5-v0.1', 'prod3b-v2'
+                  Available versions: 'prod5-v0.1', 'prod3b-v2' [default]
         force: If True, re-download even if files already exist
         keep_zip: If True, keep the downloaded zip files after extraction
     """
@@ -197,12 +197,12 @@ def download_irfs(
     log.info(f"🎉 IRF download complete! Files saved to {output_dir.resolve()}")
 
 
-def verify_irfs(output_dir: str | Path = "./IRFs") -> bool:
+def verify_irfs(output_dir: str | Path = "./IRFs/CTAO") -> bool:
     """
     Verify that downloaded IRFs can be loaded properly using IRFHouse.
 
     Args:
-        output_dir: Directory where IRFs are stored (default: ./IRFs)
+        output_dir: Directory where IRFs are stored (default: ./IRFs/CTAO)
 
     Returns:
         True if all IRFs loaded successfully, False otherwise
@@ -231,31 +231,31 @@ def verify_irfs(output_dir: str | Path = "./IRFs") -> bool:
 def main() -> int:
     """CLI entry point for downloading IRFs."""
     parser = argparse.ArgumentParser(
-        description="Download CTA Instrument Response Functions (IRFs) from Zenodo.",
+        description="Download CTAO Instrument Response Functions (IRFs) from Zenodo.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Available IRF versions:
-  prod5-v0.1   CTA prod5 v0.1 IRFs (Alpha configuration)
-  prod3b-v2    CTA prod3b v2 IRFs
+  prod5-v0.1   CTAO prod5 v0.1 IRFs (Alpha configuration) [default]
+  prod3b-v2    CTAO prod3b v2 IRFs
 
 Examples:
-  # Download all IRF versions to ./IRFs
-  sensipy-download-irfs
+  # Download latest CTAO IRFs to ./IRFs/CTAO (default)
+  sensipy-download-ctao-irfs
 
   # Download to a custom directory
-  sensipy-download-irfs --output-dir /path/to/irfs
+  sensipy-download-ctao-irfs --output-dir /path/to/irfs/CTAO
 
-  # Download only specific versions
-  sensipy-download-irfs --versions prod5-v0.1 prod3b-v2
+  # Download only specific version(s)
+  sensipy-download-ctao-irfs --versions prod5-v0.1 prod3b-v2
 
   # Force re-download even if files exist
-  sensipy-download-irfs --force
+  sensipy-download-ctao-irfs --force
 
   # Download and verify IRFs load correctly
-  sensipy-download-irfs --verify
+  sensipy-download-ctao-irfs --verify
 
   # Verify existing IRFs without downloading
-  sensipy-download-irfs --verify-only
+  sensipy-download-ctao-irfs --verify-only
         """,
     )
 
@@ -263,7 +263,7 @@ Examples:
         "-o",
         "--output-dir",
         type=str,
-        default="./IRFs",
+        default="./IRFs/CTAO",
         help="Output directory for IRF files (default: ./IRFs)",
     )
 
@@ -272,7 +272,7 @@ Examples:
         "--versions",
         nargs="+",
         choices=list(IRF_SOURCES.keys()),
-        default=None,
+        default=["prod5-v0.1"],
         help="Specific IRF versions to download (default: all)",
     )
 
@@ -322,7 +322,7 @@ Examples:
         return 0 if success else 1
 
     try:
-        download_irfs(
+        download_ctao_irfs(
             output_dir=args.output_dir,
             versions=args.versions,
             force=args.force,

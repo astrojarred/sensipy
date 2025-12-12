@@ -21,7 +21,7 @@ IRFs define the sensitivity and performance characteristics of a gamma-ray obser
 
 sensipy supports the following CTA IRF productions:
 
-- **prod5-v0.1** (Alpha Configuration, recommended for most use cases)
+- **prod5-v0.1** (Alpha Configuration, current recommendation from CTAO)
 - **prod3b-v2** (Legacy support)
 
 <Aside type="tip">
@@ -30,6 +30,26 @@ sensipy supports the following CTA IRF productions:
 </Aside>
 
 ### Downloading IRFs
+
+#### Automatically
+
+You can use the built-in command to download the latest CTAO IRFs:
+
+```bash
+# uv
+uv run sensipy-download-ctao-irfs
+
+# pip
+pip install sensipy
+sensipy-download-ctao-irfs
+
+# conda
+conda activate my-environment
+sensipy-download-ctao-irfs
+``` 
+This will automatically download and organize the latest CTAO IRFs to the `./IRFs/CTAO` directory.
+
+#### Manually
 
 <Steps>
 

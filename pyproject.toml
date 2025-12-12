@@ -55,6 +55,9 @@ Documentation = "https://sensipy.vercel.app/"
 Source = "https://github.com/astrojarred/sensipy"
 Tracker = "https://github.com/astrojarred/sensipy/issues"
 
+[project.scripts]
+sensipy-download-ctao-irfs = "sensipy.scripts.download_ctao_irfs:main"
+
 [dependency-groups]
 dev = [
     "ipykernel>=6.30.1",
