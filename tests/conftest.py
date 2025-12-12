@@ -10,12 +10,13 @@ from urllib.request import urlretrieve
 import pytest
 
 from sensipy.ctaoirf import IRFHouse
+from sensipy.util import get_data_path
 
 
 @pytest.fixture
 def mock_data_dir():
     """Return the path to the mock data directory."""
-    return Path(__file__).parent.parent / "data" / "mock_data"
+    return get_data_path("mock_data")
 
 
 @pytest.fixture
@@ -250,9 +251,14 @@ def irf_house():
     
     # Set GAMMAPY_DATA if not already set
     if "GAMMAPY_DATA" not in os.environ:
-        data_dir = Path(__file__).parent.parent / "data"
-        if data_dir.exists():
-            os.environ["GAMMAPY_DATA"] = str(data_dir)
+        try:
+            data_dir = get_data_path()
+            os.environ["GAMMAPY_DATA"] = str(data_dir.resolve())
+        except Exception:
+            # Fallback: try old location for development
+            data_dir = Path(__file__).parent.parent / "src" / "sensipy" / "data"
+            if data_dir.exists():
+                os.environ["GAMMAPY_DATA"] = str(data_dir)
     
     # Create IRFHouse instance
     house = IRFHouse(base_directory=str(irf_dir), check_irfs=False)

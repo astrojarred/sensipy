@@ -251,19 +251,27 @@ def test_source_set_ebl_model_invalid(mock_csv_path):
 
 
 def test_source_set_ebl_model_no_gammapy_data(mock_csv_path, monkeypatch):
-    """Test that error is raised when GAMMAPY_DATA is not set."""
+    """Test that GAMMAPY_DATA is automatically set to package data when not set."""
     source = Source(mock_csv_path)
 
     from astropy.coordinates import Distance
+    from sensipy.util import get_data_path
+    import os
 
     source.dist = Distance(z=0.1)
 
     # Remove GAMMAPY_DATA if it exists
     monkeypatch.delenv("GAMMAPY_DATA", raising=False)
 
-    # Use correct EBL model name
-    with pytest.raises(ValueError, match="GAMMAPY_DATA environment variable"):
-        source.set_ebl_model("dominguez")
+    # With our changes, the code should automatically set GAMMAPY_DATA to the package data directory
+    # and the EBL model should be set successfully
+    source.set_ebl_model("dominguez")
+    
+    # Verify GAMMAPY_DATA was set to package data directory
+    expected_data_path = str(get_data_path().resolve())
+    assert os.environ.get("GAMMAPY_DATA") == expected_data_path
+    assert source.ebl is not None
+    assert source.ebl_model == "dominguez"
 
 
 def test_source_csv_column_matching_flexibility(tmp_path):

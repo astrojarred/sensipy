@@ -243,11 +243,30 @@ class IRFHouse(BaseModel):
         else:
             raise ValueError(f"Invalid site {site}")
 
+        # Files can be in two locations:
+        # 1. In subdirectories (test fixtures): CTA-Performance-prod5-v0.1-South-20deg.FITS/
+        # 2. Directly in fits/ (download script): fits/
+        # Try subdirectory first, then fall back to direct path
+        subdirectory = f"CTA-Performance-prod5-v0.1-{site_string}-{subarray_string}{zenith}deg.FITS"
+        filename = f"Prod5-{site_string}-{zenith}deg-{azimuth_string}-{telescope_string}.{duration}s-v0.1.fits.gz"
+        
+        # Try subdirectory path first (for test fixtures)
+        subdir_path = self.base_directory / f"prod5-v0.1/fits/{subdirectory}/{filename}"
+        # Try direct path (for download script)
+        direct_path = self.base_directory / f"prod5-v0.1/fits/{filename}"
+        
+        # Use whichever path exists, or default to subdirectory path (will raise error if neither exists)
+        if subdir_path.exists():
+            filepath = Path(f"prod5-v0.1/fits/{subdirectory}/{filename}")
+        elif direct_path.exists():
+            filepath = Path(f"prod5-v0.1/fits/{filename}")
+        else:
+            # Default to subdirectory path - validation will raise appropriate error
+            filepath = Path(f"prod5-v0.1/fits/{subdirectory}/{filename}")
+        
         return IRF(
             base_directory=self.base_directory,
-            filepath=Path(
-                f"prod5-v0.1/fits/Prod5-{site_string}-{zenith}deg-{azimuth_string}-{telescope_string}.{duration}s-v0.1.fits.gz"
-            ),
+            filepath=filepath,
             configuration=configuration,
             site=site,
             zenith=zenith,
@@ -490,7 +509,7 @@ class IRFHouse(BaseModel):
             if missing == 0 and found > 0:
                 log.info(f"✅ {version}: Found all {found} IRFs")
             elif found == 0:
-                log.warning(f"⚠️ {version}: No IRFs found (expected {total})")
+                log.debug(f"⚠️ {version}: No IRFs found (expected {total})")
                 all_found = False
             else:
                 log.warning(f"⚠️ {version}: Found {found}/{total} IRFs ({missing} missing)")

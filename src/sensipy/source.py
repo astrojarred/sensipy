@@ -29,6 +29,7 @@ from scipy.interpolate import RegularGridInterpolator, interp1d
 
 from .logging import logger
 from .sensitivity import ScaledTemplateModel, Sensitivity
+from .util import get_data_path
 
 log = logger(__name__)
 
@@ -604,12 +605,22 @@ class Source:
                 raise ValueError(
                     f"ebl must be one of {list(EBL_DATA_BUILTIN.keys())}, got {ebl}"
                 )
+            
+            # Set GAMMAPY_DATA to package data directory if not already set
             if not os.environ.get("GAMMAPY_DATA"):
-                raise ValueError(
-                    "GAMMAPY_DATA environment variable not set. "
-                    "Please set it to the path where the EBL data is stored. "
-                    "You can copy EBL data from here: https://github.com/astrojarred/sensipy/tree/main/data"
-                )
+                try:
+                    package_data_dir = get_data_path()
+                    # Convert Path to string for environment variable
+                    data_path = str(package_data_dir.resolve())
+                    os.environ["GAMMAPY_DATA"] = data_path
+                    log.debug(f"Set GAMMAPY_DATA to package data directory: {data_path}")
+                except Exception as e:
+                    raise ValueError(
+                        "GAMMAPY_DATA environment variable not set and could not "
+                        f"use package data directory: {e}. "
+                        "Please set GAMMAPY_DATA to the path where the EBL data is stored, "
+                        "or ensure the sensipy package data is properly installed."
+                    )
 
             self.ebl = EBLAbsorptionNormSpectralModel.read_builtin(
                 ebl, redshift=self.dist.z.value
