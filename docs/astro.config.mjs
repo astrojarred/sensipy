@@ -21,6 +21,7 @@ export default defineConfig({
             {label: "Overview", slug: "getting_started/overview"},
             {label: "Installation", slug: "getting_started/installation"},
             {label: "Setup", slug: "getting_started/setup"},
+            {label: "IRFs", slug: "getting_started/irfs"},
             {label: "Spectral Models", slug: "getting_started/spectral_models"},
             {label: "EBL Models", slug: "getting_started/ebl_models"},
             {

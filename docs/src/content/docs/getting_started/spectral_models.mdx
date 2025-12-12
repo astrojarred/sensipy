@@ -3,7 +3,7 @@ title: Spectral Models
 description: How to format and load spectral models.
 ---
 
-import {Aside, Code, Tabs, TabItem} from "@astrojs/starlight/components";
+import {Aside, Code, Tabs, TabItem, FileTree} from "@astrojs/starlight/components";
 
 ## Overview
 
@@ -19,6 +19,22 @@ Currently, the supported file formats are:
   CSV files are the current recommended format for sensipy spectral models due
   to their flexibility and ease of use.
 </Aside>
+
+## Mock Data Files
+
+The package includes example mock data files in the `data/mock_data/` directory that you can use for testing and learning:
+
+<FileTree>
+
+- data/
+  - mock_data/
+    - GRB_42_mock.csv (CSV format spectral model)
+    - GRB_42_mock.fits (FITS format spectral model)
+    - GRB_42_mock_metadata.csv (metadata for the source)
+
+</FileTree>
+
+These example files demonstrate the expected format and can be used to test your setup. For real analysis, you'll need to provide your own spectral model data.
 
 ## CSV File Format
 
@@ -210,6 +226,27 @@ source.show_spectral_pattern(
 )
 ```
 
+## Using Your Own Data
+
+To use your own spectral models:
+
+1. **Prepare your data** in CSV or FITS format (see format details above)
+2. **Include metadata** (optional but recommended) for source properties like distance, coordinates, etc.
+3. **Load the data** using the `Source` class
+
+```python
+from sensipy.source import Source
+import astropy.units as u
+
+# Load your custom spectral model
+source = Source(
+    filepath="path/to/your/model.csv",
+    min_energy=30 * u.GeV,
+    max_energy=10 * u.TeV,
+    ebl="franceschini"  # Optional: add EBL absorption for extragalactic sources
+)
+```
+
 ## Energy Range Considerations
 
 When loading spectral models, you should specify the energy range of interest. This helps:
@@ -240,6 +277,6 @@ source = Source(
 
 ## Next Steps
 
-- Learn about [EBL Models](./ebl_models) and when to apply them
+- Learn about [EBL Models](/getting_started/ebl_models) and when to apply them
 - See the [Tutorials](/tutorials/) for complete workflow examples
 - Check the [Source class API](/reference/source) for detailed method documentation

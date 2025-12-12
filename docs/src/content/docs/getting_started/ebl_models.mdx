@@ -42,6 +42,12 @@ sensipy includes several EBL absorption models that differ in their assumptions 
 | `dominguez`          | Domínguez et al. (2011)          |
 | `saldana-lopez_2021` | Saldana-Lopez et al. (2021)      |
 
+<Aside type="note">
+  These EBL models are automatically included with the sensipy package and are
+  located in the `data/ebl/` directory within the package installation. No
+  additional setup is required to use them.
+</Aside>
+
 ### Absorption Optical Depth
 
 The EBL absorption is characterized by the optical depth τ(E, z), where the attenuated flux is:
@@ -125,7 +131,7 @@ from sensipy.source import Source
 import astropy.units as u
 
 # Setup IRF
-house = IRFHouse(base_directory="./CTA-IRFs")
+house = IRFHouse(base_directory="./IRFs/CTAO")
 irf = house.get_irf(
     site="south",
     configuration="alpha",
@@ -182,21 +188,34 @@ These files contain tabulated optical depths τ(E, z) as functions of energy and
 
 ### Using Gammapy's EBL Dataset
 
-sensipy also supports EBL models from Gammapy's dataset. To use them:
+sensipy also supports EBL models from Gammapy's dataset. To use Gammapy's EBL models:
 
-1. Set the `GAMMAPY_DATA` environment variable:
+1. **Set the GAMMAPY_DATA environment variable**
 
    ```bash
    export GAMMAPY_DATA=/path/to/gammapy-data
    ```
 
-2. Download Gammapy datasets (includes EBL models):
+2. **Download EBL models using Gammapy**
 
    ```bash
    gammapy download datasets
    ```
 
-3. Use any Gammapy-supported EBL model name when creating your source.
+3. **Use the EBL model in your code**
+
+   ```python
+   from sensipy.source import Source
+   import astropy.units as u
+
+   # Load source with EBL absorption using Gammapy model
+   source = Source(
+       filepath="path/to/spectrum.csv",
+       min_energy=0.02 * u.TeV,
+       max_energy=10 * u.TeV,
+       ebl="franceschini"  # Can use any Gammapy-supported EBL model name
+   )
+   ```
 
 ## Redshift Considerations
 
@@ -245,6 +264,6 @@ z_precise = Planck18.lookback_distance(d_L)
 
 ## Next Steps
 
-- Learn how to [calculate sensitivity curves](./sensitivity) with EBL-absorbed spectra
+- Learn how to [calculate sensitivity curves](/getting_started/sensitivity) with EBL-absorbed spectra
 - See [Tutorials](/tutorials/) for complete workflow examples
 - Check the [Source API reference](/reference/source) for detailed method documentation
