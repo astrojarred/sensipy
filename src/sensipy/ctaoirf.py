@@ -153,6 +153,9 @@ class IRF(BaseModel):
 
         return "\n".join([title, filepath, config, site, zenith, duration, azimuth])
 
+    def __str__(self) -> str:
+        return self.__repr__()
+
     def __fspath__(self):
         return str(self.filepath)
 
