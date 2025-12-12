@@ -705,7 +705,7 @@ class Source:
             cmap="viridis",
             aspect="auto",
         )
-        plt.colorbar(label="Log spectrum [ph / (cm2 s GeV)]")
+        plt.colorbar(label="Log dN/dE [cm-2 s-1 GeV-1]")
 
         if return_plot:
             return plt
