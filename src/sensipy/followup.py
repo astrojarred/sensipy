@@ -18,7 +18,7 @@ def get_row(
     ebl: bool = False,
     config: str = "alpha",
     duration: int = 1800,
-    event_id_column: str = "coinc_event_id",
+    event_id_column: str = "event_id",
 ):
     """Retrieve a sensitivity row from the dataframe matching the specified criteria.
 
@@ -36,7 +36,7 @@ def get_row(
         config: IRF configuration name. Defaults to "alpha".
         duration: Observation duration in seconds. Defaults to 1800.
         event_id_column: Name of the column containing event IDs. Defaults to
-            "coinc_event_id".
+            "event_id".
 
     Returns:
         pandas.Series: The first matching row from the dataframe.
@@ -70,7 +70,7 @@ def extrapolate_obs_time(
     extrapolation_df: pd.DataFrame,
     filters: dict[str, str | float | int] = {},
     other_info: list[str] = [],
-    event_id_column: str = "coinc_event_id",
+    event_id_column: str = "event_id",
 ):
     """Estimate the required observation time for a given delay using interpolation.
 
@@ -91,7 +91,7 @@ def extrapolate_obs_time(
         other_info: List of column names to include in the returned dictionary.
             These are extracted from the first matching row.
         event_id_column: Name of the column containing event IDs. Defaults to
-            "coinc_event_id".
+            "event_id".
 
     Returns:
         dict: Dictionary containing:
@@ -170,7 +170,7 @@ def get_sensitivity(
     radius: u.Quantity = 3.0 * u.deg,
     min_energy: u.Quantity = 0.02 * u.TeV,
     max_energy: u.Quantity = 10 * u.TeV,
-    event_id_column: str = "coinc_event_id",
+    event_id_column: str = "event_id",
 ):
     """Create a Sensitivity object for a given event and observation configuration.
 
@@ -196,7 +196,7 @@ def get_sensitivity(
         min_energy: Minimum energy for the sensitivity calculation. Defaults to 0.02 TeV.
         max_energy: Maximum energy for the sensitivity calculation. Defaults to 10 TeV.
         event_id_column: Name of the column containing event IDs in sens_df. Defaults to
-            "coinc_event_id".
+            "event_id".
 
     Returns:
         Sensitivity: A configured Sensitivity object ready for use in exposure calculations.
@@ -258,7 +258,7 @@ def get_exposure(
     zenith: int,
     grb_filepath: Path | str | None = None,
     sens_df: pd.DataFrame | None = None,
-    event_id_column: str = "coinc_event_id",
+    event_id_column: str = "event_id",
     sensitivity_curve: list | None = None,
     photon_flux_curve: list | None = None,
     extrapolation_df: pd.DataFrame | Path | str | None = None,
@@ -295,7 +295,7 @@ def get_exposure(
         grb_filepath: Path to the GRB source file. Required if extrapolation_df is None.
         sens_df: Optional DataFrame containing pre-computed sensitivity data.
         event_id_column: Name of the column containing event IDs. Defaults to
-            "coinc_event_id".
+            "event_id".
         sensitivity_curve: Optional list of sensitivity values. Must be provided with
             photon_flux_curve if sens_df is None.
         photon_flux_curve: Optional list of photon flux values. Must be provided with

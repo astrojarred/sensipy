@@ -19,7 +19,7 @@ def test_get_row_found(sample_sensitivity_df):
         duration=1800,
     )
     
-    assert row["coinc_event_id"] == 42
+    assert row["event_id"] == 42
     assert row["irf_site"] == "north"
     assert row["irf_zenith"] == 20
 
@@ -116,7 +116,7 @@ def test_extrapolate_obs_time_other_info(sample_extrapolation_df):
 def test_extrapolate_obs_time_custom_event_id_column(sample_extrapolation_df):
     """Test extrapolate_obs_time with custom event_id_column."""
     # Rename column
-    df = sample_extrapolation_df.rename(columns={"coinc_event_id": "event_id"})
+    df = sample_extrapolation_df.rename(columns={"event_id": "event_id"})
     
     result = followup.extrapolate_obs_time(
         event_id=42,

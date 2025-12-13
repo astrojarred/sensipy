@@ -85,7 +85,7 @@ Query many events quickly:
     lookup_df = pd.read_parquet("./O5_gammapy_observations_v4.parquet")
 
     # Get all unique event IDs
-    event_ids = lookup_df['coinc_event_id'].unique()[:100]  # First 100
+    event_ids = lookup_df['event_id'].unique()[:100]  # First 100
 
     delay = 30 * u.min
     detectable_count = 0
@@ -207,7 +207,7 @@ import matplotlib.pyplot as plt
 lookup_df = pd.read_parquet("./O5_gammapy_observations_v4.parquet")
 
 # Get subset of events
-event_ids = lookup_df['coinc_event_id'].unique()[:50]
+event_ids = lookup_df['event_id'].unique()[:50]
 
 # Parameter grid
 delay = 60 * u.s

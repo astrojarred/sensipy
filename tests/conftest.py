@@ -57,7 +57,7 @@ def sample_sensitivity_df():
 
     df = pd.DataFrame(
         {
-            "coinc_event_id": [42, 42, 42],
+            "event_id": [42, 42, 42],
             "irf_site": ["north", "north", "south"],
             "irf_zenith": [20, 40, 20],
             "irf_ebl": [False, False, True],
@@ -77,7 +77,7 @@ def sample_extrapolation_df():
 
     df = pd.DataFrame(
         {
-            "coinc_event_id": [42, 42, 42, 42],
+            "event_id": [42, 42, 42, 42],
             "obs_delay": [100, 1000, 10000, 100000],
             "obs_time": [10, 100, 1000, 10000],
             "irf_site": ["north", "north", "north", "north"],

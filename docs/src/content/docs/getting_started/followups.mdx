@@ -36,7 +36,7 @@ df = pd.read_parquet("O5_gammapy_observations_v4.parquet")
 
 print(df.columns)
 # Columns typically include:
-# - coinc_event_id: GW event identifier
+# - event_id: GW event identifier
 # - site: 'north' or 'south'
 # - zenith: zenith angle (degrees)
 # - delay: observation delay time
@@ -90,7 +90,7 @@ print(result)
 | `ebl`              | `str` or `bool`         | EBL model name, or `True`/`False`                       |
 | `config`           | `str`                   | Telescope configuration (default: `"alpha"`)            |
 | `duration`         | `int`                   | IRF duration in seconds (default: `1800`)               |
-| `event_id_column`  | `str`                   | Column name for event IDs (default: `"coinc_event_id"`) |
+| `event_id_column`  | `str`                   | Column name for event IDs (default: `"event_id"`) |
 
 ### Return Value
 
@@ -278,7 +278,7 @@ import numpy as np
 lookup_df = pd.read_parquet("./O5_gammapy_observations_v4.parquet")
 
 # Get all unique event IDs
-event_ids = lookup_df['coinc_event_id'].unique()[:100]  # First 100 events
+event_ids = lookup_df['event_id'].unique()[:100]  # First 100 events
 
 # Fixed observing parameters
 delay = 60 * u.s

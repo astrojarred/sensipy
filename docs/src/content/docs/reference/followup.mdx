@@ -24,7 +24,7 @@ get_exposure(
     radius: u.Quantity = 3.0 * u.deg,
     min_energy: u.Quantity = 0.02 * u.TeV,
     max_energy: u.Quantity = 10 * u.TeV,
-    event_id_column: str = "coinc_event_id",
+    event_id_column: str = "event_id",
 ) -> dict
 ```
 
@@ -43,7 +43,7 @@ get_exposure(
 | `radius`           | `u.Quantity`          | Extraction radius (default: `3.0 deg`)                  |
 | `min_energy`       | `u.Quantity`          | Minimum energy (default: `0.02 TeV`)                    |
 | `max_energy`       | `u.Quantity`          | Maximum energy (default: `10 TeV`)                      |
-| `event_id_column`  | `str`                 | Column name for event IDs (default: `"coinc_event_id"`) |
+| `event_id_column`  | `str`                 | Column name for event IDs (default: `"event_id"`) |
 
 ### Returns
 
@@ -94,7 +94,7 @@ get_row(
     ebl: bool = False,
     config: str = "alpha",
     duration: int = 1800,
-    event_id_column: str = "coinc_event_id",
+    event_id_column: str = "event_id",
 ) -> pd.Series
 ```
 
@@ -126,7 +126,7 @@ extrapolate_obs_time(
     extrapolation_df: pd.DataFrame,
     filters: dict[str, str | float | int] = {},
     other_info: list[str] = [],
-    event_id_column: str = "coinc_event_id",
+    event_id_column: str = "event_id",
 ) -> dict
 ```
 
@@ -172,7 +172,7 @@ get_sensitivity(
     radius: u.Quantity = 3.0 * u.deg,
     min_energy: u.Quantity = 0.02 * u.TeV,
     max_energy: u.Quantity = 10 * u.TeV,
-    event_id_column: str = "coinc_event_id",
+    event_id_column: str = "event_id",
 ) -> Sensitivity
 ```
 
