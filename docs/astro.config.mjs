@@ -1,12 +1,29 @@
 // @ts-check
 import {defineConfig} from "astro/config";
+import rehypeKatex from "rehype-katex";
+import remarkMath from "remark-math";
 import starlight from "@astrojs/starlight";
 
 // https://astro.build/config
 export default defineConfig({
+  markdown: {
+    remarkPlugins: [remarkMath],
+    rehypePlugins: [rehypeKatex],
+  },
   integrations: [
     starlight({
       title: "sensipy",
+      head: [
+        {
+          tag: "link",
+          attrs: {
+            rel: "stylesheet",
+            href: "https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css",
+            integrity: "sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+",
+            crossorigin: "anonymous",
+          },
+        },
+      ],
       social: [
         {
           icon: "github",

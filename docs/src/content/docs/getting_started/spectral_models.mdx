@@ -22,7 +22,7 @@ Currently, the supported file formats are:
 
 ## Mock Data Files
 
-The package includes example mock data files in the `data/mock_data/` directory that you can use for testing and learning:
+The package includes example mock data files that you can use for testing and learning. These files are installed with the package and can be accessed using the `get_data_path()` utility function:
 
 <FileTree>
 
@@ -48,7 +48,7 @@ Multiple spectra can be included in the same file, each with a different time. T
 
 ### Sample CSV File
 
-A full sample CSV file is available in the `data/mock_data` directory. The first rows look something like this:
+A full sample CSV file is included with the package. The first rows look something like this:
 
 ```csv
 time [s],energy [GeV],dNdE [cm-2 s-1 GeV-1]
@@ -72,18 +72,22 @@ The CSV reader is flexible with column names:
 
 ```python
 from sensipy.source import Source
+from sensipy.util import get_data_path
 import astropy.units as u
+
+# Get path to package mock data
+mock_data_path = get_data_path("mock_data/GRB_42_mock.csv")
 
 # Load CSV spectral model
 source = Source(
-    filepath="data/mock_data/GRB_42_mock.csv",
+    filepath=str(mock_data_path),
     min_energy=30 * u.GeV,
     max_energy=10 * u.TeV,
 )
 
 # Optionally add EBL absorption
 source_with_ebl = Source(
-    filepath="data/mock_data/GRB_42_mock.csv",
+    filepath=str(mock_data_path),
     min_energy=30 * u.GeV,
     max_energy=10 * u.TeV,
     ebl="franceschini"
@@ -103,11 +107,15 @@ FITS files can also be used to store spectral models. The expected structure is:
 
 ```python
 from sensipy.source import Source
+from sensipy.util import get_data_path
 import astropy.units as u
+
+# Get path to package mock data
+mock_fits_path = get_data_path("mock_data/GRB_42_mock.fits")
 
 # Load FITS spectral model
 source = Source(
-    filepath="data/mock_data/GRB_42_mock.fits",
+    filepath=str(mock_fits_path),
     min_energy=30 * u.GeV,
     max_energy=10 * u.TeV,
     ebl="dominguez"
@@ -169,8 +177,10 @@ Once loaded, metadata is accessible through the `metadata` property:
 
 ```python
 from sensipy.source import Source
+from sensipy.util import get_data_path
 
-source = Source(filepath="data/mock_data/GRB_42_mock.csv")
+mock_data_path = get_data_path("mock_data/GRB_42_mock.csv")
+source = Source(filepath=str(mock_data_path))
 
 # Access metadata
 meta = source.metadata
@@ -216,7 +226,13 @@ flux = source.get_flux(energy=energy, time=time)
 lightcurve = source.get_flux(energy=energy)
 ```
 
+The following plots demonstrate these querying methods using the mock data:
+
+![Spectrum and lightcurve](/spectrum_and_lightcurve.png)
+
 ### Visualizing the Spectral Pattern
+
+The spectral pattern is a 2D plot of the spectral energy distribution (SED) as a function of time and energy.
 
 ```python
 # Show the full time-energy spectral pattern
@@ -225,6 +241,10 @@ source.show_spectral_pattern(
     return_plot=True
 )
 ```
+
+**Spectral pattern visualization:**
+
+![Spectral pattern showing time-energy distribution](/spectral_pattern.png)
 
 ## Using Your Own Data
 
@@ -266,14 +286,6 @@ source = Source(
     max_energy=max_energy,
 )
 ```
-
-## Best Practices
-
-1. **Use CSV format** for new spectral models - it's the most flexible and debuggable
-2. **Include metadata** when available - it's essential for GW event cataloging
-3. **Use consistent units** - stick to the expected units (s, GeV, cm⁻² s⁻¹ GeV⁻¹)
-4. **Specify energy ranges** - always define `min_energy` and `max_energy` appropriate for your observatory
-5. **Add EBL absorption** for extragalactic sources - use appropriate EBL models for high-redshift sources
 
 ## Next Steps
 

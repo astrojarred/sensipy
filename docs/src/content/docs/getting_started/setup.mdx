@@ -9,7 +9,7 @@ After installing sensipy, you'll need to set up the required data files to use t
 
 **Setup checklist:**
 
-- [x] **Compatible IRFs** — CTAO IRFs are freely available on Zenodo *(required)*
+- [ ] **Compatible IRFs** — CTAO IRFs are freely available on Zenodo *(required)*
 - [x] **EBL models** — Included with package *(no action needed unless you want to use a different EBL model)*
 - [x] **Spectral models** — Example data included *(bring your own for real analysis)*
 
@@ -42,45 +42,7 @@ EBL models are included with the package. No setup required unless you want to u
 
 ### Spectral Models
 
-Example mock data is included in `data/mock_data/`. See the [Spectral Models](/getting_started/spectral_models) page for format requirements and how to use your own data.
-
-## Quick Start Example
-
-```python
-from sensipy.ctaoirf import IRFHouse
-from sensipy.source import Source
-import astropy.units as u
-
-# Load IRF
-house = IRFHouse(base_directory="./IRFs/CTAO")
-irf = house.get_irf(
-    site="south",
-    configuration="alpha",
-    zenith=20,
-    duration=1800,
-    azimuth="average",
-    version="prod5-v0.1",
-)
-
-# Load spectral model
-source = Source(
-    filepath="data/mock_data/GRB_42_mock.csv",
-    min_energy=30 * u.GeV,
-    max_energy=10 * u.TeV,
-    ebl="franceschini"
-)
-```
-
-## Gravitational Wave Event Catalogs
-
-For full GW followup simulations, you'll need access to gravitational wave event catalogs (e.g., O5 simulations).
-
-<Aside type="caution">
-  GW event catalogs are not included with the package. Contact the maintainers
-  if you need access to these catalogs for your research.
-</Aside>
-
-See the [Followups](/getting_started/followups) page for more information on GW event analysis.
+Example mock data is included with the package. See the [Spectral Models](/getting_started/spectral_models) page for format requirements and how to access the included mock data files.
 
 ## Verifying Your Setup
 
@@ -92,6 +54,7 @@ from sensipy.source import Source
 import astropy.units as u
 
 # Test IRF loading
+print("Testing IRF loading...")
 try:
     house = IRFHouse(base_directory="./IRFs/CTAO")
     irf = house.get_irf(
@@ -107,11 +70,15 @@ except Exception as e:
     print(f"✗ IRF loading failed: {e}")
 
 # Test spectral model loading
+print("Testing spectral model loading with EBL...")
 try:
+    from sensipy.util import get_data_path
+    mock_data_path = get_data_path("mock_data/GRB_42_mock.csv")
     source = Source(
-        filepath="data/mock_data/GRB_42_mock.csv",
+        filepath=str(mock_data_path),
         min_energy=30 * u.GeV,
         max_energy=10 * u.TeV,
+        ebl="franceschini",
     )
     print("✓ Spectral model loading successful")
 except Exception as e:

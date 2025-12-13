@@ -7,22 +7,17 @@ import {Aside, Steps, Tabs, TabItem} from "@astrojs/starlight/components";
 
 ## Overview
 
-Exposure time calculations determine **how long** a gamma-ray observatory needs to observe a transient source to achieve a specified detection significance. This is the core functionality for simulating gravitational wave (GW) followup observations.
+Exposure time calculations determine **how long** a gamma-ray observatory needs to observe a transient source to achieve a specified detection significance. 
+This is one of the core functionalities of sensipy and is particularly useful for rapidly-evolving time-varying sources.
 
 Given:
 
 - A time-evolving source spectrum
 - Observatory sensitivity
 - An observation start time (delay from event onset)
-- A target significance level
+- A target significance level $\sigma$
 
-sensipy calculates the **required observation time** to reach that significance, or reports that the source is not detectable.
-
-<Aside type="tip">
-  This is particularly useful for planning GW followup campaigns and
-  understanding under which scenarios electromagnetic counterparts could be
-  detected.
-</Aside>
+`sensipy` calculates the **required observation time** to reach that significance $\sigma$, or reports that the source is not detectable.
 
 ## The `observe` Method
 
@@ -30,19 +25,19 @@ The primary method for exposure calculations is `Source.observe()`:
 
 ```python
 from sensipy.source import Source
-from sensipy.sensitivity import SensitivityGammapy
+from sensipy.sensitivity import Sensitivity
 import astropy.units as u
 
 # Load source and sensitivity (see previous sections)
 source = Source(
-    filepath="grb_spectrum.csv",
+    filepath="source_spectrum.csv",
     min_energy=20 * u.GeV,
     max_energy=10 * u.TeV,
     ebl="franceschini"
 )
 
-sens = SensitivityGammapy(irf=irf, ...)
-sens.get_sensitivity_curve(grb=source)
+sens = Sensitivity(irf=irf, ...)
+sens.get_sensitivity_curve(source=source)
 
 # Simulate observation starting 30 minutes after event
 result = source.observe(
@@ -97,9 +92,7 @@ The `observe()` method returns a dictionary with the following keys:
     # Source metadata (if available)
     'long': <Quantity>,           # RA/longitude
     'lat': <Quantity>,            # Dec/latitude
-    'eiso': <Quantity>,           # Isotropic energy
     'dist': <Quantity>,           # Distance
-    'angle': <Quantity>,          # Jet opening angle
     'id': int,                    # Event ID
 }
 ```
@@ -113,11 +106,11 @@ The `observe()` method returns a dictionary with the following keys:
     ```python
     import astropy.units as u
     from sensipy.source import Source
-    from sensipy.sensitivity import SensitivityGammapy
+    from sensipy.sensitivity import Sensitivity
     from sensipy.ctaoirf import IRFHouse
 
     # Setup
-    house = IRFHouse(base_directory="./CTA-IRFs")
+    house = IRFHouse(base_directory="./IRFs/CTAO")
     irf = house.get_irf(
         site="south",
         configuration="alpha",
@@ -128,20 +121,20 @@ The `observe()` method returns a dictionary with the following keys:
     )
 
     source = Source(
-        filepath="grb.csv",
+        filepath="source.csv",
         min_energy=20 * u.GeV,
         max_energy=10 * u.TeV,
         ebl="franceschini"
     )
 
-    sens = SensitivityGammapy(
+    sens = Sensitivity(
         irf=irf,
         observatory="ctao_south",
         min_energy=20 * u.GeV,
         max_energy=10 * u.TeV,
         radius=3.0 * u.deg,
     )
-    sens.get_sensitivity_curve(grb=source)
+    sens.get_sensitivity_curve(source=source)
 
     # Observe
     result = source.observe(
@@ -202,13 +195,13 @@ The `observe()` method returns a dictionary with the following keys:
 
     for ebl_model in [None, "franceschini", "dominguez"]:
         source = Source(
-            filepath="grb.csv",
+            filepath="source.csv",
             min_energy=20 * u.GeV,
             max_energy=10 * u.TeV,
             ebl=ebl_model
         )
 
-        sens.get_sensitivity_curve(grb=source)
+        sens.get_sensitivity_curve(source=source)
         result = source.observe(
             sensitivity=sens,
             start_time=delay,
@@ -381,19 +374,19 @@ For large-scale studies (e.g., GW event catalogs), you can batch process many ev
 import pandas as pd
 from pathlib import Path
 
-# Catalog of GRB files
-grb_files = Path("./O5_catalog/").glob("cat05_*.fits")
+# Catalog of event files
+source_files = Path("./event_catalog/").glob("event_*.csv")
 results_list = []
 
-for grb_file in grb_files:
+for source_file in source_files:
     source = Source(
-        filepath=str(grb_file),
+        filepath=str(source_file),
         min_energy=20 * u.GeV,
         max_energy=10 * u.TeV,
         ebl="franceschini"
     )
 
-    sens.get_sensitivity_curve(grb=source)
+    sens.get_sensitivity_curve(source=source)
     result = source.observe(
         sensitivity=sens,
         start_time=30 * u.min,
@@ -408,10 +401,7 @@ df = pd.DataFrame(results_list)
 print(f"Detection fraction: {df['seen'].sum() / len(df):.2%}")
 print(f"Median obs time: {df[df['seen']]['obs_time'].median()}")
 ```
-
-## Troubleshooting
-
-### Common Issues
+With a parallelization package like `ray` or `dask`, you can speed up the previous loop significantly.
 
 **Problem**: All sources report as not detectable
 

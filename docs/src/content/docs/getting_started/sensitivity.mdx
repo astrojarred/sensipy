@@ -7,21 +7,22 @@ import {Aside, Steps, Tabs, TabItem, Code} from "@astrojs/starlight/components";
 
 ## Overview
 
-Sensitivity calculations determine the minimum detectable flux for a gamma-ray observatory under specific observing conditions. In sensipy, sensitivity curves are used to evaluate whether a time-varying source (like a GRB) can be detected and how long it would take to reach a specified significance level.
-
-<Aside type="tip">
-  sensipy uses [Gammapy](https://gammapy.org/) under the hood for sensitivity
-  calculations, providing state-of-the-art analysis tools compatible with CTAO.
-</Aside>
+Sensitivity calculations determine the minimum detectable flux for a gamma-ray observatory under specific observing conditions. In sensipy, sensitivity curves are used to evaluate whether a time-varying source can be detected and how long it would take to reach a specified significance level.
 
 ## What is a Sensitivity Curve?
 
 A **sensitivity curve** represents the minimum differential flux (energy flux per unit energy) that an observatory can detect at a given significance level, as a function of observation time.
 
-For each observation time, the sensitivity curve provides:
+For example, see the following sensitivity curve from the CTAO Performance report on [their website](https://www.ctao.org/for-scientists/performance/#:~:text=Sensitivity%20vs%20Observation%20Time) pertaining to the $5 \sigma$ detection of a Crab Nebula-like source:
 
-- **Differential sensitivity**: Minimum detectable dN/dE [cm⁻² s⁻¹ GeV⁻¹]
-- **Photon flux sensitivity**: Minimum detectable photon flux [cm⁻² s⁻¹]
+![CTAO sensitivity curve](https://www.ctao.org/wp-content/uploads/CTA-Performance-ShortTerm-prod5-v0.1-North.png)
+
+For each observation time, the sensitivity curve may either be:
+
+- **Differential** flux sensitivity: E² dN/dE [GeV cm⁻² s⁻¹]
+- **Integral**: Minimum detectable spectral flux [GeV cm⁻² s⁻¹] or photon flux [cm⁻² s⁻¹]
+
+
 
 These curves depend on:
 
@@ -33,15 +34,15 @@ These curves depend on:
 
 ## Creating a Sensitivity Calculator
 
-sensipy provides the `SensitivityGammapy` class for calculating sensitivity curves using Gammapy:
+sensipy provides the `Sensitivity` class for calculating sensitivity curves using Gammapy:
 
 ```python
 from sensipy.ctaoirf import IRFHouse
-from sensipy.sensitivity import SensitivityGammapy
+from sensipy.sensitivity import Sensitivity
 import astropy.units as u
 
 # Load IRFs
-house = IRFHouse(base_directory="./CTA-IRFs")
+house = IRFHouse(base_directory="./IRFs/CTAO")
 irf = house.get_irf(
     site="south",
     configuration="alpha",
@@ -52,7 +53,7 @@ irf = house.get_irf(
 )
 
 # Create sensitivity calculator
-sensitivity = SensitivityGammapy(
+sensitivity = Sensitivity(
     irf=irf,
     observatory=f"ctao_{irf.site.name}",  # "ctao_south"
     min_energy=20 * u.GeV,
@@ -80,19 +81,19 @@ Once you have a `Source` object with a time-resolved spectrum, you can compute t
   <TabItem label="Basic Example">
     ```python
     from sensipy.source import Source
-    from sensipy.sensitivity import SensitivityGammapy
+    from sensipy.sensitivity import Sensitivity
     import astropy.units as u
 
     # Load source
     source = Source(
-        filepath="path/to/grb_spectrum.csv",
+        filepath="path/to/source_spectrum.csv",
         min_energy=20 * u.GeV,
         max_energy=10 * u.TeV,
         ebl="franceschini"
     )
 
     # Create sensitivity calculator
-    sens = SensitivityGammapy(
+    sens = Sensitivity(
         irf=irf,
         observatory="ctao_south",
         min_energy=20 * u.GeV,
@@ -101,22 +102,24 @@ Once you have a `Source` object with a time-resolved spectrum, you can compute t
     )
 
     # Compute sensitivity curve for this source
-    sens.get_sensitivity_curve(grb=source)
+    sens.get_sensitivity_curve(source=source)
 
     # Access the sensitivity curve
     print(sens.sensitivity_curve)
     print(sens.photon_flux_curve)
     ```
 
+    ![Basic sensitivity example](/sensitivity_basic_example.png)
+
   </TabItem>
   
   <TabItem label="Custom Time Range">
     ```python
-    from sensipy.sensitivity import SensitivityGammapy
+    from sensipy.sensitivity import Sensitivity
     import astropy.units as u
 
     # Specify custom time range
-    sens = SensitivityGammapy(
+    sens = Sensitivity(
         irf=irf,
         observatory="ctao_south",
         min_energy=20 * u.GeV,
@@ -127,14 +130,16 @@ Once you have a `Source` object with a time-resolved spectrum, you can compute t
         n_sensitivity_points=20,  # 20 time points
     )
 
-    sens.get_sensitivity_curve(grb=source)
+    sens.get_sensitivity_curve(source=source)
     ```
+
+    ![Custom time range sensitivity](/sensitivity_custom_time.png)
 
   </TabItem>
   
   <TabItem label="Pre-computed Curves">
     ```python
-    from sensipy.sensitivity import SensitivityGammapy
+    from sensipy.sensitivity import Sensitivity
     import astropy.units as u
     import numpy as np
 
@@ -143,7 +148,7 @@ Once you have a `Source` object with a time-resolved spectrum, you can compute t
     sens_values = np.array([...]) * u.Unit("erg / (cm2 s)")
     photon_flux_values = np.array([...]) * u.Unit("1 / (cm2 s)")
 
-    sens = SensitivityGammapy(
+    sens = Sensitivity(
         irf=irf,
         observatory="ctao_south",
         min_energy=20 * u.GeV,
@@ -153,6 +158,8 @@ Once you have a `Source` object with a time-resolved spectrum, you can compute t
         photon_flux_curve=photon_flux_values,
     )
     ```
+
+    ![Pre-computed sensitivity curves](/sensitivity_precomputed.png)
 
   </TabItem>
 </Tabs>
@@ -200,23 +207,119 @@ phot_flux = sens.get(time, mode="photon_flux")
 
 Unit: `cm⁻² s⁻¹`
 
-## Viewing Sensitivity Tables
+## Direct Sensitivity Calculation: Integral vs Differential
 
-You can export sensitivity data as tables for analysis or plotting:
+sensipy provides `get_sensitivity_from_model()` for directly calculating sensitivity at a specific time using a spectral model. This method supports two types of sensitivity calculations:
+
+### Integral Sensitivity
+
+**Integral sensitivity** calculates the minimum detectable flux integrated over the entire energy range. It returns a single value representing the total photon flux or energy flux needed for detection.
+
+**Key characteristics:**
+- Returns a single sensitivity value for the entire energy range
+- Units: Photon flux [cm⁻² s⁻¹] or Energy flux [erg cm⁻² s⁻¹]
+- Uses Monte Carlo simulations with iterative root finding
+- More computationally intensive but accounts for full spectral shape
 
 ```python
-# As Astropy Table
-table = sens.table
-print(table)
+from sensipy.sensitivity import Sensitivity
+from gammapy.modeling.models import PowerLawSpectralModel
+import astropy.units as u
 
-# As Pandas DataFrame
-df = sens.pandas
-print(df.head())
+# Create a sensitivity calculator
+sens = Sensitivity(
+    irf=irf,
+    observatory="ctao_south",
+    min_energy=20 * u.GeV,
+    max_energy=10 * u.TeV,
+    radius=3.0 * u.deg,
+)
+
+# Define a spectral model (e.g., power law)
+spectral_model = PowerLawSpectralModel(
+    index=2.0,
+    amplitude=1e-12 * u.Unit("cm-2 s-1 TeV-1"),
+    reference=1 * u.TeV,
+)
+
+# Calculate integral sensitivity at a specific time
+time = 1000 * u.s
+result = sens.get_sensitivity_from_model(
+    t=time,
+    spectral_model=spectral_model,
+    sensitivity_type="integral",
+    redshift=0.0,  # Set to > 0 for extragalactic sources
+)
+
+print(f"Photon flux sensitivity: {result['photon_flux']}")
+print(f"Energy flux sensitivity: {result['energy_flux']}")
 ```
+Examples for a power law spectral model with index 2.0 at three different timesteps:
+![Integral sensitivity example](/sensitivity_integral_example.png)
+
+### Differential Sensitivity
+
+**Differential sensitivity** calculates the minimum detectable flux per unit energy at each energy bin. It returns a table with sensitivity values as a function of energy.
+
+**Key characteristics:**
+- Returns sensitivity values for each energy bin
+- Units: dN/dE [GeV⁻¹ cm⁻² s⁻¹] at each energy
+- Uses analytical background estimation
+- Faster computation, provides energy-dependent sensitivity
+
+```python
+from sensipy.sensitivity import Sensitivity
+from gammapy.modeling.models import PowerLawSpectralModel
+import astropy.units as u
+
+# Create a sensitivity calculator
+sens = Sensitivity(
+    irf=irf,
+    observatory="ctao_south",
+    min_energy=20 * u.GeV,
+    max_energy=10 * u.TeV,
+    radius=3.0 * u.deg,
+)
+
+# Define a spectral model
+spectral_model = PowerLawSpectralModel(
+    index=2.0,
+    amplitude=1e-12 * u.Unit("cm-2 s-1 TeV-1"),
+    reference=1 * u.TeV,
+)
+
+# Calculate differential sensitivity at a specific time
+time = 1000 * u.s
+result_table = sens.get_sensitivity_from_model(
+    t=time,
+    spectral_model=spectral_model,
+    sensitivity_type="differential",
+    redshift=0.0,
+)
+
+# The result is a Table with columns: energy, e_min, e_max, sensitivity
+print(result_table)
+```
+Example for a power law spectral model with index 2.0 at three different timesteps:
+![Differential sensitivity example](/sensitivity_differential_example.png)
+
+### When to Use Each Type
+
+**Use Integral Sensitivity when:**
+- You need a single sensitivity value for the entire energy range
+- Comparing total flux requirements across different sources
+- Working with sources where the full spectral shape matters
+- You have computational resources for more accurate calculations
+
+**Use Differential Sensitivity when:**
+- You need energy-dependent sensitivity information
+- Analyzing which energy ranges contribute most to detection
+- Comparing sensitivity across different energy bands
+- You need faster computation times
 
 ## Sensitivity and Source Spectra
 
-The sensitivity calculation uses the source spectral shape to optimize energy binning and background estimation. This is why you pass a `Source` object (with `get_sensitivity_curve(grb=source)`).
+The sensitivity calculation uses the source spectral shape to optimize energy binning and background estimation. This is why you pass a `Source` object (with `get_sensitivity_curve(source=source)`).
 
 ### Spectral Template Scaling
 
@@ -241,121 +344,6 @@ scaled_model.scaling_factor = 0.5  # Reduce flux by 50%
   Most users don't need to interact with `ScaledTemplateModel` directly - it's
   used internally by the sensitivity calculator.
 </Aside>
-
-## Example: Full Sensitivity Workflow
-
-<Steps>
-
-1. **Load IRFs**
-
-   ```python
-   from sensipy.ctaoirf import IRFHouse
-
-   house = IRFHouse(base_directory="./CTA-IRFs")
-   irf = house.get_irf(
-       site="south",
-       configuration="alpha",
-       zenith=20,
-       duration=1800,
-       azimuth="average",
-       version="prod5-v0.1",
-   )
-   ```
-
-2. **Create Source with spectral model**
-
-   ```python
-   from sensipy.source import Source
-   import astropy.units as u
-
-   source = Source(
-       filepath="grb_spectrum.csv",
-       min_energy=20 * u.GeV,
-       max_energy=10 * u.TeV,
-       ebl="franceschini"
-   )
-   ```
-
-3. **Initialize Sensitivity Calculator**
-
-   ```python
-   from sensipy.sensitivity import SensitivityGammapy
-
-   sens = SensitivityGammapy(
-       irf=irf,
-       observatory="ctao_south",
-       min_energy=20 * u.GeV,
-       max_energy=10 * u.TeV,
-       radius=3.0 * u.deg,
-   )
-   ```
-
-4. **Compute Sensitivity Curve**
-
-   ```python
-   sens.get_sensitivity_curve(grb=source)
-   ```
-
-5. **Use for Detection Simulation**
-
-   ```python
-   # Now use this sensitivity to simulate observations
-   result = source.observe(
-       sensitivity=sens,
-       start_time=30 * u.min,
-       min_energy=20 * u.GeV,
-       max_energy=10 * u.TeV,
-   )
-
-   print(f"Detection time: {result.get('obs_time', 'Not detected')}")
-   ```
-
-</Steps>
-
-## Advanced Topics
-
-### EBL Impact on Sensitivity
-
-When using EBL absorption, the attenuated source spectrum may require longer observation times to detect:
-
-```python
-# Without EBL
-source_no_ebl = Source(filepath="grb.csv", min_energy=20*u.GeV, max_energy=10*u.TeV)
-sens.get_sensitivity_curve(grb=source_no_ebl)
-result_no_ebl = source_no_ebl.observe(sensitivity=sens, start_time=30*u.min)
-
-# With EBL
-source_ebl = Source(filepath="grb.csv", min_energy=20*u.GeV, max_energy=10*u.TeV, ebl="franceschini")
-sens.get_sensitivity_curve(grb=source_ebl)
-result_ebl = source_ebl.observe(sensitivity=sens, start_time=30*u.min)
-
-print(f"No EBL: {result_no_ebl['obs_time']}")
-print(f"With EBL: {result_ebl['obs_time']}")
-```
-
-### Systematic Uncertainties
-
-TODO: Document how to incorporate systematic uncertainties in sensitivity calculations.
-
-## Troubleshooting
-
-### Common Issues
-
-**Problem**: Sensitivity calculation is very slow
-
-**Solution**: Reduce `n_sensitivity_points` or limit the time range (`min_time`, `max_time`)
-
----
-
-**Problem**: "No valid sensitivity found" error
-
-**Solution**: Check that your source spectrum overlaps with the energy range and that the flux is not too weak to detect
-
----
-
-**Problem**: Different results with different IRF versions
-
-**Solution**: This is expected - newer IRF versions may have improved sensitivity. Always document which IRF version you use.
 
 ## Next Steps
 

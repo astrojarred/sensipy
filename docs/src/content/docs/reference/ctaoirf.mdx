@@ -27,7 +27,7 @@ IRFHouse(base_directory: str | Path, check_irfs: bool = False)
 ```python
 from sensipy.ctaoirf import IRFHouse
 
-house = IRFHouse(base_directory="./CTA-IRFs")
+house = IRFHouse(base_directory="./IRFs/CTAO")
 ```
 
 ### Methods
@@ -202,7 +202,7 @@ class Version(str, Enum):
 ```python
 from sensipy.ctaoirf import IRFHouse, Site, Zenith, Configuration
 
-house = IRFHouse(base_directory="./CTA-IRFs")
+house = IRFHouse(base_directory="./IRFs/CTAO")
 
 irf = house.get_irf(
     site=Site.south,

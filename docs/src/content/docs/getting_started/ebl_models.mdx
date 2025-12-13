@@ -7,7 +7,7 @@ import {Aside, Tabs, TabItem} from "@astrojs/starlight/components";
 
 ## What is EBL Absorption?
 
-The Extragalactic Background Light (EBL) is diffuse radiation spanning from ultraviolet to far-infrared wavelengths that fills intergalactic space. When very-high-energy (VHE) gamma rays travel through the universe, they can interact with EBL photons via pair production (γ + γ → e⁺ + e⁻), causing **absorption** that attenuates the gamma-ray flux.
+The Extragalactic Background Light (EBL) is isotropic diffuse background radiation spanning from ultraviolet to far-infrared wavelengths. When very-high-energy (VHE) gamma rays travel through the universe, they can interact with EBL photons via pair production (γ + γ → e⁺ + e⁻), causing **absorption** that attenuates the gamma-ray flux.
 
 For extragalactic sources at cosmological distances, EBL absorption can significantly affect the observed gamma-ray spectrum, particularly at higher energies and larger redshifts.
 
@@ -21,17 +21,17 @@ For extragalactic sources at cosmological distances, EBL absorption can signific
 You should apply EBL absorption models when:
 
 - **Simulating extragalactic sources** (redshift z > 0)
-- **Working at VHE energies** (> 100 GeV)
-- **Analyzing sources at cosmological distances** (> ~100 Mpc)
+- **Working at VHE energies**
+- **Analyzing sources at cosmological distances**
 - **Comparing models to observed spectra** from extragalactic transients
 
-You can typically **skip** EBL absorption for:
+EBL is often negligible for:
 
 - Galactic sources
 - Very nearby extragalactic sources (z < 0.01)
-- Low-energy observations (< 100 GeV, though absorption still exists)
+- Low-energy observations, but depending on redshift
 
-## Available EBL Models
+## EBL Models included in sensipy
 
 sensipy includes several EBL absorption models that differ in their assumptions about star formation history, galaxy evolution, and dust properties:
 
@@ -43,18 +43,18 @@ sensipy includes several EBL absorption models that differ in their assumptions 
 | `saldana-lopez_2021` | Saldana-Lopez et al. (2021)      |
 
 <Aside type="note">
-  These EBL models are automatically included with the sensipy package and are
-  located in the `data/ebl/` directory within the package installation. No
-  additional setup is required to use them.
+  These EBL models are automatically included with the sensipy package. No
+  additional setup is required to use them - they are automatically available
+  when you specify an EBL model name in your code.
 </Aside>
 
 ### Absorption Optical Depth
 
 The EBL absorption is characterized by the optical depth τ(E, z), where the attenuated flux is:
 
-```
-F_observed(E) = F_intrinsic(E) × exp(-τ(E, z))
-```
+$$
+F_{\text{observed}}(E) = F_{\text{intrinsic}}(E) \times \exp(-\tau(E, z))
+$$
 
 Higher optical depth → stronger absorption → lower observed flux.
 
@@ -62,45 +62,22 @@ Higher optical depth → stronger absorption → lower observed flux.
 
 ### Loading a Source with EBL Absorption
 
-<Tabs>
-  <TabItem label="Basic Usage">
-    ```python
-    from sensipy.source import Source
-    import astropy.units as u
+If redshift is included in the spectral model metadata, it will be used automatically:
 
-    # Load source with EBL absorption
-    source = Source(
-        filepath="path/to/grb_spectrum.csv",
-        min_energy=20 * u.GeV,
-        max_energy=10 * u.TeV,
-        ebl="franceschini"  # Apply Franceschini 2008 model
-    )
-    ```
+```python
+from sensipy.source import Source
+import astropy.units as u
 
-  </TabItem>
-  
-  <TabItem label="With Redshift">
-    ```python
-    from sensipy.source import Source
-    import astropy.units as u
+# Load source with EBL absorption
+source = Source(
+    filepath="path/to/spectrum.csv",
+    min_energy=20 * u.GeV,
+    max_energy=1 * u.TeV,
+    ebl="franceschini"  # Apply Franceschini 2008 model
+)
+```
 
-    # Specify source redshift explicitly
-    source = Source(
-        filepath="path/to/grb_spectrum.csv",
-        min_energy=20 * u.GeV,
-        max_energy=10 * u.TeV,
-        ebl="dominguez"
-    )
-
-    # Set or update EBL with specific redshift
-    source.set_ebl_model(ebl="franceschini", z=0.5)
-    ```
-
-  </TabItem>
-  
-</Tabs>
-
-### Updating EBL Model
+### Updating or overriding the EBL Model
 
 You can change the EBL model after creating a Source object:
 
@@ -113,82 +90,32 @@ source = Source(filepath="path/to/spectrum.csv")
 # Add EBL absorption later
 source.set_ebl_model(ebl="franceschini", z=0.3)
 
-# Switch to a different EBL model
-source.set_ebl_model(ebl="dominguez")
+# Switch to a different EBL model and redshift
+source.set_ebl_model(ebl="dominguez", z=0.5)
 
 # Remove EBL absorption
 source.set_ebl_model(ebl=None)
 ```
 
-## EBL Impact on Sensitivity
-
-EBL absorption affects sensitivity calculations because the attenuated spectrum may fall below the observatory's detection threshold:
-
-```python
-from sensipy.ctaoirf import IRFHouse
-from sensipy.sensitivity import SensitivityGammapy
-from sensipy.source import Source
-import astropy.units as u
-
-# Setup IRF
-house = IRFHouse(base_directory="./IRFs/CTAO")
-irf = house.get_irf(
-    site="south",
-    configuration="alpha",
-    zenith=20,
-    duration=1800,
-    azimuth="average",
-    version="prod5-v0.1",
-)
-
-# Create sensitivity calculator
-sens = SensitivityGammapy(
-    irf=irf,
-    observatory=f"ctao_{irf.site.name}",
-    min_energy=20 * u.GeV,
-    max_energy=10 * u.TeV,
-    radius=3.0 * u.deg,
-)
-
-# Compare detection with and without EBL
-for ebl_model in [None, "franceschini"]:
-    source = Source(
-        filepath="grb_model.csv",
-        min_energy=20 * u.GeV,
-        max_energy=10 * u.TeV,
-        ebl=ebl_model
-    )
-
-    sens.get_sensitivity_curve(grb=source)
-    result = source.observe(
-        sensitivity=sens,
-        start_time=30 * u.min,
-        min_energy=20 * u.GeV,
-        max_energy=10 * u.TeV,
-    )
-
-    ebl_label = ebl_model if ebl_model else "No EBL"
-    print(f"{ebl_label}: Detection time = {result.get('obs_time', 'Not detected')}")
-```
-
 ## EBL Data Files
 
-EBL model data files are included in the sensipy package at `data/ebl/`:
+EBL model data files from `gammapy` are included in the sensipy package. 
 
-```
-data/ebl/
-├── ebl_franceschini.fits.gz
-├── ebl_franceschini_2017.fits.gz
-├── ebl_dominguez11.fits.gz
-├── ebl_saldana-lopez_2021.fits.gz
-└── README.md
-```
+These files contain tabulated optical depths τ(E, z) as functions of energy and redshift. The files are automatically located when you use EBL models - no manual path configuration is needed.
 
-These files contain tabulated optical depths τ(E, z) as functions of energy and redshift.
+If you need to access the EBL data files directly (e.g., for inspection), you can use:
+
+```python
+from sensipy.util import get_data_path
+
+# Get path to EBL data directory
+ebl_dir = get_data_path("ebl")
+print(f"EBL data location: {ebl_dir}")
+```
 
 ### Using Gammapy's EBL Dataset
 
-sensipy also supports EBL models from Gammapy's dataset. To use Gammapy's EBL models:
+sensipy will supports EBL models in the gammapy format: [see here](https://docs.gammapy.org/2.0/user-guide/model-gallery/spectral/plot_absorbed.html).
 
 1. **Set the GAMMAPY_DATA environment variable**
 
@@ -202,58 +129,6 @@ sensipy also supports EBL models from Gammapy's dataset. To use Gammapy's EBL mo
    gammapy download datasets
    ```
 
-3. **Use the EBL model in your code**
-
-   ```python
-   from sensipy.source import Source
-   import astropy.units as u
-
-   # Load source with EBL absorption using Gammapy model
-   source = Source(
-       filepath="path/to/spectrum.csv",
-       min_energy=0.02 * u.TeV,
-       max_energy=10 * u.TeV,
-       ebl="franceschini"  # Can use any Gammapy-supported EBL model name
-   )
-   ```
-
-## Redshift Considerations
-
-The EBL absorption depends critically on **redshift** (z). When specifying EBL models:
-
-- If your spectral model file includes redshift metadata (e.g., via `z` or `redshift` field), it will be used automatically
-- If not, you should specify the redshift when setting the EBL model
-- For GW event catalogs, redshift is typically calculated from luminosity distance
-
-### Redshift from Distance
-
-For GW events, luminosity distance is often known. You can convert to redshift (approximately, for z < 1):
-
-```python
-from astropy.cosmology import Planck18
-from astropy import units as u
-
-# Given luminosity distance
-d_L = 466 * u.Mpc
-
-# Calculate redshift
-z = (d_L.to(u.Gpc).value) / 4.0  # Rough approximation
-# Or use astropy cosmology for precise calculation:
-z_precise = Planck18.lookback_distance(d_L)
-```
-
-<Aside type="caution">
-  Always verify the redshift value is correctly set when using EBL models. An
-  incorrect redshift can lead to significantly wrong absorption corrections.
-</Aside>
-
-## Best Practices
-
-1. **Always use EBL absorption** for extragalactic transients (z > 0.01)
-2. **Choose an appropriate EBL model** based on your scientific goals and community standards
-3. **Verify redshift** is correctly set or provided in your spectral model metadata
-4. **Compare models** when results are sensitive to EBL choice (high-z, high-E sources)
-5. **Document your choice** in publications - specify which EBL model you used
 
 ## References
 

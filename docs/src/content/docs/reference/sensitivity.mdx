@@ -5,14 +5,14 @@ description: API reference for sensitivity calculation classes.
 
 import {Aside} from "@astrojs/starlight/components";
 
-## SensitivityGammapy
+## Sensitivity
 
 Calculate sensitivity curves using Gammapy for gamma-ray observatories.
 
 ### Constructor
 
 ```python
-SensitivityGammapy(
+Sensitivity(
     irf: IRF,
     observatory: str,
     radius: u.Quantity,
@@ -41,10 +41,10 @@ SensitivityGammapy(
 **Example:**
 
 ```python
-from sensipy.sensitivity import SensitivityGammapy
+from sensipy.sensitivity import Sensitivity
 from astropy import units as u
 
-sens = SensitivityGammapy(
+sens = Sensitivity(
     irf=irf,
     observatory="ctao_south",
     min_energy=20 * u.GeV,
@@ -66,7 +66,7 @@ get_sensitivity_curve(grb: Source) -> None
 Calculates sensitivity and photon flux curves, stored in `sensitivity_curve` and `photon_flux_curve` attributes.
 
 ```python
-sens.get_sensitivity_curve(grb=source)
+sens.get_sensitivity_curve(source=source)
 print(sens.sensitivity_curve)
 ```
 
@@ -149,7 +149,7 @@ from_template(
 
 <Aside type="note">
   Most users don't interact with `ScaledTemplateModel` directly—it's used
-  internally by `SensitivityGammapy`.
+  internally by `Sensitivity`.
 </Aside>
 
 ## Related

@@ -32,7 +32,7 @@ The `IRFHouse` class manages multiple IRF files and provides a simple interface 
    from sensipy.ctaoirf import IRFHouse
 
    # Point to your IRF root directory
-   house = IRFHouse(base_directory="./CTA-IRFs")
+   house = IRFHouse(base_directory="./IRFs/CTAO")
    ```
 
 2. **Load a Specific IRF**
@@ -147,7 +147,7 @@ This is the duration for which the IRF was calculated, NOT your actual observati
 ```python
 from sensipy.ctaoirf import IRFHouse
 
-house = IRFHouse(base_directory="./CTA-IRFs")
+house = IRFHouse(base_directory="./IRFs/CTAO")
 
 # Load IRFs for different configurations
 irfs = {}
@@ -174,7 +174,7 @@ The `IRF` object provides useful information:
 ```python
 from sensipy.ctaoirf import IRFHouse
 
-house = IRFHouse(base_directory="./CTA-IRFs")
+house = IRFHouse(base_directory="./IRFs/CTAO")
 irf = house.get_irf(
     site="south",
     configuration="alpha",
@@ -205,7 +205,7 @@ print(irf)  # Formatted summary
 Use `check_all_paths()` to verify all expected IRF files exist:
 
 ```python
-house = IRFHouse(base_directory="./CTA-IRFs", check_irfs=True)
+house = IRFHouse(base_directory="./IRFs/CTAO", check_irfs=True)
 
 # This will check all paths and report missing files
 house.check_all_paths()
@@ -223,7 +223,7 @@ You can use enums for type safety:
 ```python
 from sensipy.ctaoirf import IRFHouse, Site, Zenith, Duration, Configuration, Azimuth, Version
 
-house = IRFHouse(base_directory="./CTA-IRFs")
+house = IRFHouse(base_directory="./IRFs/CTAO")
 
 irf = house.get_irf(
     site=Site.south,

@@ -21,21 +21,24 @@ The `Source.observe()` method simulates an observation starting at a specified d
 
 ```python
 from sensipy.ctaoirf import IRFHouse
-from sensipy.sensitivity import SensitivityGammapy
+from sensipy.sensitivity import Sensitivity
 from sensipy.source import Source
 from astropy import units as u
 
 # Setup (IRF, source, sensitivity)
-house = IRFHouse(base_directory="./CTA-IRFs")
+house = IRFHouse(base_directory="./IRFs/CTAO")
 irf = house.get_irf(site="south", configuration="alpha", zenith=20,
                      duration=1800, azimuth="average", version="prod5-v0.1")
 
-source = Source(filepath="data/mock_data/GRB_42_mock.csv",
+from sensipy.util import get_data_path
+mock_data_path = get_data_path("mock_data/GRB_42_mock.csv")
+
+source = Source(filepath=str(mock_data_path),
                 min_energy=20*u.GeV, max_energy=10*u.TeV, ebl="franceschini")
 
-sens = SensitivityGammapy(irf=irf, observatory="ctao_south",
+sens = Sensitivity(irf=irf, observatory="ctao_south",
                            min_energy=20*u.GeV, max_energy=10*u.TeV, radius=3.0*u.deg)
-sens.get_sensitivity_curve(grb=source)
+sens.get_sensitivity_curve(source=source)
 
 # Simulate observation starting 30 minutes after the GW event
 result = source.observe(
@@ -196,7 +199,7 @@ for i, grb_file in enumerate(grb_files):
         ebl="franceschini"
     )
 
-    sens.get_sensitivity_curve(grb=source)
+    sens.get_sensitivity_curve(source=source)
     result = source.observe(
         sensitivity=sens,
         start_time=delay,
