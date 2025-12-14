@@ -18,9 +18,9 @@ A lookup table contains pre-simulated observation times for a grid of:
 - **Observatory configurations** (site, zenith, azimuth, IRF version)
 - **EBL models**
 
-**The followup module filters the lookup table by event, observation conditions, and any other metadata columns you provide in order to instantly estimate the observation time needed.**
+**The followup module filters the lookup table by event, observation conditions, and any other metadata columns you provide in order to instantly interpolate the observation time needed from exposure calculations you have already performed.**
 
-These tables are can be stored as **Parquet** or **CSV** files.
+These tables are can be stored in any format readable by pandas, such as **Parquet** or **CSV** files.
 
 ### Typical Lookup Table Structure
 
@@ -37,30 +37,27 @@ print(df.columns)
 
 ### Common Columns in Lookup Tables
 
-| Column          | Type    | Description                                          |
-| --------------- | ------- | ---------------------------------------------------- |
-| `event_id`      | int     | Event identifier                                  |
-| `obs_delay`     | float   | Observation delay time (seconds)                    |
-| `obs_time`      | float   | Required observation time (seconds)                  |
-| `irf_site`      | str     | Observatory site: `'north'` or `'south'`            |
-| `irf_zenith`    | float   | Zenith angle (degrees)                              |
-| `irf_ebl`       | bool    | Boolean indicating if EBL is used                    |
-| `irf_ebl_model` | str     | EBL model name (e.g., `'franceschini'`, `'dominguez11'`) |
-| `irf_config`    | str     | Telescope configuration                              |
-| `irf_duration`  | int     | IRF duration (seconds)                               |
-| `long`          | float   | Source longitude (radians)                           |
-| `lat`           | float   | Source latitude (radians)                            |
-| `dist`          | float   | Source distance (kpc)                               |
+Two columns are required: `obs_delay` and `obs_time`, which are the observation delay and the $5\sigma$ observation time for the event, respectively. The columns names do not have to match exactly.
+
+| Column          | Type    | Required | Description                                          |
+| --------------- | ------- | -------- | ---------------------------------------------------- |
+| `obs_delay`     | float   | Yes      | Observation delay time (seconds)                    |
+| `obs_time`      | float   | Yes      | $5\sigma$ observation time (seconds)                  |
+| `event_id`      | int     | Yes      | Event identifier                                  |
+| `irf_site`      | str     | No       | Observatory site: `'north'` or `'south'`            |
+| `irf_zenith`    | float   | No       | Zenith angle (degrees)                              |
+| `irf_ebl`       | bool    | No       | Boolean indicating if EBL is used                    |
+| `irf_ebl_model` | str     | No       | EBL model name (e.g., `'franceschini'`, `'dominguez11'`) |
+| `irf_config`    | str     | No       | Telescope configuration                              |
+| `irf_duration`  | int     | No       | IRF duration (seconds)                               |
+| `long`          | float   | No       | Source longitude (radians)                           |
+| `lat`           | float   | No       | Source latitude (radians)                            |
+| `dist`          | float   | No       | Source distance (kpc)                               |
 
 
 ## The `get_exposure` Function
 
-The main function for followup calculations is `sensipy.followup.get_exposure()`:
-
-
-<Aside type="danger" title='Unique Filters'>
-  The combination of filters you provide via keyword arguments should match a single row in the lookup table. If more than one row matches, the first one will be use for the interpolation.
-</Aside>
+The main function for followup calculations is `sensipy.followup.get_exposure()`.
 
 ```python
 from sensipy import followup
