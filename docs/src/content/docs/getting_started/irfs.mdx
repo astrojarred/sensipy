@@ -33,18 +33,27 @@ sensipy supports the following CTA IRF productions:
 
 You can use the built-in command to download the latest CTAO IRFs:
 
-```bash
-# uv
-uv run sensipy-download-ctao-irfs
+import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-# pip
-pip install sensipy
-sensipy-download-ctao-irfs
-
-# conda
-conda activate my-environment
-sensipy-download-ctao-irfs
-``` 
+<Tabs>
+  <TabItem label="uv">
+    ```bash
+    uv run sensipy-download-ctao-irfs
+    ```
+  </TabItem>
+  <TabItem label="pip">
+    ```bash
+    pip install sensipy
+    sensipy-download-ctao-irfs
+    ```
+  </TabItem>
+  <TabItem label="conda">
+    ```bash
+    conda activate my-environment
+    sensipy-download-ctao-irfs
+    ```
+  </TabItem>
+</Tabs>
 
 This will automatically download and organize the latest CTAO IRFs to the `./IRFs/CTAO` directory.
 
