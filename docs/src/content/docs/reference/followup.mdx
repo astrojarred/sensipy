@@ -13,18 +13,23 @@ Calculate exposure information using pre-computed lookup tables via interpolatio
 
 ```python
 get_exposure(
-    event_id: int,
     delay: u.Quantity,
-    site: str,
-    zenith: int,
-    extrapolation_df: pd.DataFrame | str,
-    ebl: str | bool,
-    config: str = "alpha",
-    duration: int = 1800,
+    source_filepath: Path | str | None = None,
+    lookup_df: pd.DataFrame | Path | str | None = None,
+    sensitivity_curve: list | None = None,
+    photon_flux_curve: list | None = None,
+    redshift: float | None = None,
     radius: u.Quantity = 3.0 * u.deg,
     min_energy: u.Quantity = 0.02 * u.TeV,
     max_energy: u.Quantity = 10 * u.TeV,
-    event_id_column: str = "event_id",
+    target_precision: u.Quantity = 1 * u.s,
+    max_time: u.Quantity = 12 * u.h,
+    sensitivity_mode: Literal["sensitivity", "photon_flux"] = "sensitivity",
+    n_time_steps: int = 10,
+    other_info: list[str] = ["long", "lat" "dist"],
+    delay_column: str = "obs_delay",
+    obs_time_column: str = "obs_time",
+    **filters: str | float | int | bool,
 ) -> dict
 ```
 
@@ -32,18 +37,30 @@ get_exposure(
 
 | Parameter          | Type                  | Description                                             |
 | ------------------ | --------------------- | ------------------------------------------------------- |
-| `event_id`         | `int`                 | GW event identifier from catalog                        |
 | `delay`            | `u.Quantity`          | Observation delay from event onset                      |
-| `site`             | `str`                 | Observatory site (`"north"` or `"south"`)               |
-| `zenith`           | `int`                 | Zenith angle in degrees (20, 40, or 60)                 |
-| `extrapolation_df` | `pd.DataFrame \| str` | Lookup DataFrame or filepath                            |
-| `ebl`              | `str \| bool`         | EBL model name or True/False                            |
-| `config`           | `str`                 | Telescope configuration (default: `"alpha"`)            |
-| `duration`         | `int`                 | IRF duration in seconds (default: `1800`)               |
+| `source_filepath`  | `Path \| str \| None` | Path to source file. Required if lookup_df is None |
+| `lookup_df`        | `pd.DataFrame \| Path \| str \| None` | Optional DataFrame or path to parquet file containing pre-computed observation times or sensitivity data. If provided, uses lookup mode |
+| `sensitivity_curve` | `list \| None`      | Optional list of sensitivity values                     |
+| `photon_flux_curve` | `list \| None`       | Optional list of photon flux values                    |
+| `redshift`         | `float \| None`       | Optional redshift value for EBL calculations           |
 | `radius`           | `u.Quantity`          | Extraction radius (default: `3.0 deg`)                  |
 | `min_energy`       | `u.Quantity`          | Minimum energy (default: `0.02 TeV`)                    |
 | `max_energy`       | `u.Quantity`          | Maximum energy (default: `10 TeV`)                      |
-| `event_id_column`  | `str`                 | Column name for event IDs (default: `"event_id"`) |
+| `target_precision` | `u.Quantity`          | Precision for rounding observation times (default: `1 s`) |
+| `max_time`         | `u.Quantity`          | Maximum allowed observation time (default: `12 h`)      |
+| `sensitivity_mode` | `Literal["sensitivity", "photon_flux"]` | Detection calculation mode (default: `"sensitivity"`) |
+| `n_time_steps`     | `int`                 | Number of time steps for observation calculation (default: `10`) |
+| `other_info`       | `list[str]`           | List of column names to include in the returned dictionary when using lookup mode. These are extracted from the lookup dataframe. |
+| `delay_column`     | `str`                 | Name of the column containing observation delays (default: `"obs_delay"`) |
+| `obs_time_column`  | `str`                 | Name of the column containing observation times (default: `"obs_time"`) |
+| `**filters`        | `str \| float \| int \| bool` | Any custom column-value pairs to filter dataframes. Common filters: |
+|                    |                       | - `event_id`: Event identifier (if present in lookup table) |
+|                    |                       | - `irf_site`: Observatory site (`"north"` or `"south"`) |
+|                    |                       | - `irf_zenith`: Zenith angle in degrees |
+|                    |                       | - `irf_ebl`: Boolean indicating if EBL is used (True/False) |
+|                    |                       | - `irf_ebl_model`: EBL model name (e.g., "franceschini", "dominguez11") |
+|                    |                       | - `irf_config`: Telescope configuration (default: `"alpha"`) |
+|                    |                       | - `irf_duration`: IRF duration in seconds (default: `1800`) |
 
 ### Returns
 
@@ -54,7 +71,7 @@ Dictionary with keys:
 - `start_time`, `end_time`: Observation window
 - `ebl_model`: EBL model used
 - `min_energy`, `max_energy`: Energy range
-- Source metadata: `id`, `long`, `lat`, `eiso`, `dist`, `angle`
+- Any metadata columns you request via `other_info`, for example; `long`, `lat`, `dist`, etc.
 - `error_message`: Error details if not detectable
 
 ### Example
@@ -67,12 +84,12 @@ import pandas as pd
 lookup_df = pd.read_parquet("./O5_gammapy_observations_v4.parquet")
 
 result = followup.get_exposure(
-    event_id=42,
     delay=30 * u.min,
-    site="south",
-    zenith=20,
-    extrapolation_df=lookup_df,
-    ebl="franceschini",
+    lookup_df=lookup_df,
+    event_id=42,
+    irf_site="south",
+    irf_zenith=20,
+    irf_ebl_model="franceschini",
 )
 
 if result['seen']:
@@ -87,30 +104,50 @@ Retrieve a specific row from the lookup table matching given criteria.
 
 ```python
 get_row(
-    sens_df: pd.DataFrame,
-    event_id: int,
-    site: str,
-    zenith: int,
-    ebl: bool = False,
-    config: str = "alpha",
-    duration: int = 1800,
-    event_id_column: str = "event_id",
+    lookup_df: pd.DataFrame,
+    **filters: str | float | int | bool,
 ) -> pd.Series
 ```
+
+### Parameters
+
+| Parameter | Type | Description |
+| --------- | ---- | ----------- |
+| `lookup_df` | `pd.DataFrame` | DataFrame containing lookup data |
+| `**filters` | `str \| float \| int \| bool` | Column-value pairs to filter the dataframe. Keyword arguments should be column names, values should be the values to match. This allows filtering on any column in the dataframe. |
+
+### Returns
+
+`pandas.Series`: The first matching row from the dataframe.
+
+### Raises
+
+- `ValueError`: If no row matches all the specified criteria, if no filters are provided, or if a specified column does not exist in the dataframe.
 
 ### Example
 
 ```python
 from sensipy.followup import get_row
 
+# Filter using any column names as keyword arguments
 row = get_row(
-    sens_df=lookup_df,
+    lookup_df=lookup_df,
     event_id=42,
-    site="south",
-    zenith=20,
-    ebl=True,
+    irf_site="south",
+    irf_zenith=20,
+    irf_ebl=True,
+    irf_config="alpha",
+    irf_duration=1800,
 )
 print(row)
+
+# You can filter on any columns in the dataframe
+row = get_row(
+    lookup_df=lookup_df,
+    event_id=42,
+    custom_column="value",
+    another_column=123,
+)
 ```
 
 ## extrapolate_obs_time()
@@ -121,23 +158,23 @@ Low-level interpolation function for observation times.
 
 ```python
 extrapolate_obs_time(
-    event_id: int,
     delay: u.Quantity,
-    extrapolation_df: pd.DataFrame,
+    lookup_df: pd.DataFrame,
     filters: dict[str, str | float | int] = {},
     other_info: list[str] = [],
-    event_id_column: str = "event_id",
+    delay_column: str = "obs_delay",
+    obs_time_column: str = "obs_time",
 ) -> dict
 ```
 
 ### Parameters
 
-- `event_id`: Event identifier
 - `delay`: Observation delay
-- `extrapolation_df`: Lookup table
-- `filters`: Additional filtering criteria (dict)
+- `lookup_df`: Lookup table
+- `filters`: Dictionary of column-value pairs to filter the dataframe. All filters must match for a row to be included.
 - `other_info`: Additional fields to include in output (list)
-- `event_id_column`: Event ID column name
+- `delay_column`: Name of the column containing observation delays (default: "obs_delay")
+- `obs_time_column`: Name of the column containing observation times (default: "obs_time")
 
 ### Example
 
@@ -146,35 +183,44 @@ from sensipy.followup import extrapolate_obs_time
 import astropy.units as u
 
 result = extrapolate_obs_time(
-    event_id=42,
     delay=100 * u.s,
-    extrapolation_df=lookup_df,
-    filters={'site': 'south', 'zenith': 20},
+    lookup_df=lookup_df,
+    filters={'event_id': 42, 'irf_site': 'south', 'irf_zenith': 20},
     other_info=['long', 'lat', 'eiso'],
 )
 ```
 
 ## get_sensitivity()
 
-Create a `Sensitivity` object from lookup table data.
+Create a `Sensitivity` object from lookup table data or directly provided curves.
 
 ### Signature
 
 ```python
 get_sensitivity(
-    event_id: int,
-    sens_df: pd.DataFrame,
-    site: str,
-    zenith: int,
-    ebl: bool = False,
-    config: str = "alpha",
-    duration: int = 1800,
+    lookup_df: pd.DataFrame | None = None,
+    sensitivity_curve: list[float] | None = None,
+    photon_flux_curve: list[float] | None = None,
+    observatory: str | None = None,
     radius: u.Quantity = 3.0 * u.deg,
     min_energy: u.Quantity = 0.02 * u.TeV,
     max_energy: u.Quantity = 10 * u.TeV,
-    event_id_column: str = "event_id",
+    **filters: str | float | int | bool,
 ) -> Sensitivity
 ```
+
+### Parameters
+
+| Parameter | Type | Description |
+| --------- | ---- | ----------- |
+|         `lookup_df` | `pd.DataFrame \| None` | Optional DataFrame containing pre-computed sensitivity data. If provided, `sensitivity_curve` and `photon_flux_curve` must be None. |
+| `sensitivity_curve` | `list[float] \| None` | Optional list of sensitivity values in erg cm⁻² s⁻¹. Must be provided with `photon_flux_curve` if `lookup_df` is None. |
+| `photon_flux_curve` | `list[float] \| None` | Optional list of photon flux values in cm⁻² s⁻¹. Must be provided with `sensitivity_curve` if `lookup_df` is None. |
+| `observatory` | `str \| None` | Observatory name (e.g., "ctao_north", "ctao_south", "hess", "magic"). Must be one of the valid observatory locations from `gammapy.data.observatory_locations`. Required if `lookup_df` is None. If `lookup_df` is provided and `observatory` is None, will attempt to construct from "irf_site" in filters (e.g., "north" -> "ctao_north"). |
+| `radius` | `u.Quantity` | Angular radius of the observation region. Defaults to 3.0 degrees. |
+| `min_energy` | `u.Quantity` | Minimum energy for the sensitivity calculation. Defaults to 0.02 TeV. |
+| `max_energy` | `u.Quantity` | Maximum energy for the sensitivity calculation. Defaults to 10 TeV. |
+| `**filters` | `str \| float \| int \| bool` | Column-value pairs to filter the dataframe when `lookup_df` is provided. Keyword arguments should be column names, values should be the values to match. This allows filtering on any column in the dataframe. |
 
 ### Example
 
@@ -182,13 +228,31 @@ get_sensitivity(
 from sensipy.followup import get_sensitivity
 import astropy.units as u
 
+# Using lookup_df with filters
 sens = get_sensitivity(
+    lookup_df=lookup_df,
     event_id=42,
-    sens_df=lookup_df,
-    site="south",
-    zenith=20,
-    ebl=True,
+    irf_zenith=20,
+    irf_ebl=True,
+    irf_config="alpha",
+    irf_duration=1800,
+    observatory="ctao_south",  # Can provide directly
     radius=3.0 * u.deg,
+)
+
+# Or construct from irf_site
+sens = get_sensitivity(
+    lookup_df=lookup_df,
+    event_id=42,
+    irf_site="south",  # Will construct "ctao_south" automatically
+    irf_zenith=20,
+)
+
+# Using curves directly
+sens = get_sensitivity(
+    sensitivity_curve=[1e-10, 1e-11, 1e-12],
+    photon_flux_curve=[1e-9, 1e-10, 1e-11],
+    observatory="ctao_north",
 )
 ```
 

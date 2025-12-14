@@ -36,7 +36,6 @@ def mock_fits_path(mock_data_dir):
     """Return the path to the mock FITS file."""
     return mock_data_dir / "GRB_42_mock.fits"
 
-
 @pytest.fixture
 def sample_sensitivity_df():
     """Create a sample sensitivity dataframe for testing."""
@@ -57,12 +56,10 @@ def sample_sensitivity_df():
 
     df = pd.DataFrame(
         {
-            "event_id": [42, 42, 42],
+            "event_id": [1, 1, 1],
             "irf_site": ["north", "north", "south"],
             "irf_zenith": [20, 40, 20],
-            "irf_ebl": [False, False, True],
-            "irf_config": ["alpha", "alpha", "alpha"],
-            "irf_duration": [1800, 1800, 1800],
+            "irf_ebl_model": ["franceschini", "franceschini", "franceschini"],
             "sensitivity_curve": sensitivity_curves,
             "photon_flux_curve": photon_flux_curves,
         }
@@ -71,30 +68,12 @@ def sample_sensitivity_df():
 
 
 @pytest.fixture
-def sample_extrapolation_df():
-    """Create a sample extrapolation dataframe for testing."""
+def sample_lookup_df():
+    """Load sample extrapolation dataframe from mock lookup table."""
     import pandas as pd
-
-    df = pd.DataFrame(
-        {
-            "event_id": [42, 42, 42, 42],
-            "obs_delay": [100, 1000, 10000, 100000],
-            "obs_time": [10, 100, 1000, 10000],
-            "irf_site": ["north", "north", "north", "north"],
-            "irf_zenith": [20, 20, 20, 20],
-            "long": [0.0, 0.0, 0.0, 0.0],
-            "lat": [1.0, 1.0, 1.0, 1.0],
-            "eiso": [2e50, 2e50, 2e50, 2e50],
-            "dist": [100000.0, 100000.0, 100000.0, 100000.0],
-            "theta_view": [5.0, 5.0, 5.0, 5.0],
-            "irf_ebl_model": [
-                "dominguez11",
-                "dominguez11",
-                "dominguez11",
-                "dominguez11",
-            ],
-        }
-    )
+    
+    lookup_table_path = get_data_path("mock_data/sample_lookup_table.parquet")
+    df = pd.read_parquet(lookup_table_path)
     return df
 
 

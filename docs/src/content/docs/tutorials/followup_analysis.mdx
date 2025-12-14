@@ -53,10 +53,10 @@ Followup calculations are **orders of magnitude faster** because they use pre-co
    result = followup.get_exposure(
        event_id=42,
        delay=10 * u.s,
-       site="north",
-       zenith=60,
-       extrapolation_df=lookup_df,
-       ebl="franceschini",
+       irf_site="north",
+       irf_zenith=60,
+       lookup_df=lookup_df,
+       irf_ebl_model="franceschini",
    )
 
    # Display results
@@ -94,10 +94,10 @@ Query many events quickly:
         result = followup.get_exposure(
             event_id=event_id,
             delay=delay,
-            site="south",
-            zenith=20,
-            extrapolation_df=lookup_df,
-            ebl="franceschini",
+            irf_site="south",
+            irf_zenith=20,
+            lookup_df=lookup_df,
+            irf_ebl_model="franceschini",
         )
 
         if result['seen']:
@@ -124,10 +124,10 @@ Query many events quickly:
         result = followup.get_exposure(
             event_id=event_id,
             delay=delay,
-            site="north",
-            zenith=40,
-            extrapolation_df=lookup_df,
-            ebl="franceschini",
+            irf_site="north",
+            irf_zenith=40,
+            lookup_df=lookup_df,
+            irf_ebl_model="franceschini",
         )
         results.append(result)
 
@@ -162,10 +162,10 @@ for delay in delays:
     result = followup.get_exposure(
         event_id=event_id,
         delay=delay,
-        site="south",
-        zenith=20,
-        extrapolation_df=lookup_df,
-        ebl="franceschini",
+        irf_site="south",
+        irf_zenith=20,
+        lookup_df=lookup_df,
+        irf_ebl_model="franceschini",
     )
 
     if result['seen']:
@@ -224,10 +224,10 @@ for i, site in enumerate(sites):
             result = followup.get_exposure(
                 event_id=event_id,
                 delay=delay,
-                site=site,
-                zenith=zenith,
-                extrapolation_df=lookup_df,
-                ebl="franceschini",
+                irf_site=site,
+                irf_zenith=zenith,
+                lookup_df=lookup_df,
+                irf_ebl_model="franceschini",
             )
             if result['seen']:
                 detections += 1
@@ -274,10 +274,10 @@ lookup_df = pd.read_parquet("./O5_gammapy_observations_v4.parquet")
 result_followup = followup.get_exposure(
     event_id=42,
     delay=30 * u.min,
-    site="south",
-    zenith=20,
-    extrapolation_df=lookup_df,
-    ebl="franceschini",
+    irf_site="south",
+    irf_zenith=20,
+    lookup_df=lookup_df,
+    irf_ebl_model="franceschini",
 )
 
 # Full simulation (slow but accurate)
@@ -330,16 +330,16 @@ lookup_df = get_cached_lookup_table("./O5_gammapy_observations_v4.parquet")
 ```python
 # If you only need a specific configuration, filter first
 lookup_df_filtered = lookup_df[
-    (lookup_df['site'] == 'south') &
-    (lookup_df['zenith'] == 20) &
-    (lookup_df['ebl'] == 'franceschini')
+    (lookup_df['irf_site'] == 'south') &
+    (lookup_df['irf_zenith'] == 20) &
+    (lookup_df['irf_ebl_model'] == 'franceschini')
 ].copy()
 
 # Now queries are faster
 result = followup.get_exposure(
     event_id=42,
     delay=30 * u.min,
-    extrapolation_df=lookup_df_filtered,
+    lookup_df=lookup_df_filtered,
     # site, zenith, ebl automatically inferred from filtered table
 )
 ```

@@ -11,50 +11,54 @@ from . import sensitivity, source
 
 
 def get_row(
-    sens_df: pd.DataFrame,
-    event_id: int,
-    site: str,
-    zenith: int,
-    ebl: bool = False,
-    config: str = "alpha",
-    duration: int = 1800,
-    event_id_column: str = "event_id",
+    lookup_df: pd.DataFrame,
+    **filters: str | float | int | bool,
 ):
-    """Retrieve a sensitivity row from the dataframe matching the specified criteria.
+    """Retrieve a row from the lookup dataframe matching the specified criteria.
 
-    Searches the sensitivity dataframe for a row that matches all of the provided
-    parameters. If multiple rows match, returns the first one. Raises an error if
+    Searches the lookup dataframe for a row that matches all of the provided
+    filter criteria. If multiple rows match, returns the first one. Raises an error if
     no matching row is found.
 
     Args:
-        sens_df: DataFrame containing sensitivity data with columns for event ID,
-            site, zenith angle, EBL flag, configuration, and duration.
-        event_id: The event identifier to search for.
-        site: Observatory site name (e.g., "north" or "south").
-        zenith: Zenith angle in degrees for the observation.
-        ebl: Whether EBL absorption is applied. Defaults to False.
-        config: IRF configuration name. Defaults to "alpha".
-        duration: Observation duration in seconds. Defaults to 1800.
-        event_id_column: Name of the column containing event IDs. Defaults to
-            "event_id".
+        lookup_df: DataFrame containing lookup data.
+        **filters: Column-value pairs to filter the dataframe. Keyword arguments should
+            be column names, values should be the values to match. This allows filtering
+            on any column in the dataframe.
 
     Returns:
         pandas.Series: The first matching row from the dataframe.
 
     Raises:
-        ValueError: If no row matches all the specified criteria.
+        ValueError: If no row matches all the specified criteria, if no filters are
+            provided, or if a specified column does not exist in the dataframe.
+
+    Example:
+        >>> row = get_row(
+        ...     lookup_df=df,
+        ...     event_id=42,
+        ...     irf_site="north",
+        ...     irf_zenith=20,
+        ...     irf_ebl=False,
+        ... )
     """
-    rows = sens_df[
-        (sens_df[event_id_column] == event_id)
-        & (sens_df["irf_site"] == site)
-        & (sens_df["irf_zenith"] == zenith)
-        & (sens_df["irf_ebl"] == ebl)
-        & (sens_df["irf_config"] == config)
-        & (sens_df["irf_duration"] == duration)
-    ]
+    if not filters:
+        raise ValueError("At least one filter must be provided.")
+    
+    # Build the filter condition dynamically
+    mask = pd.Series([True] * len(lookup_df), index=lookup_df.index)
+    for column, value in filters.items():
+        if column not in lookup_df.columns:
+            raise ValueError(
+                f"Column '{column}' specified in filters does not exist in the dataframe. "
+                f"Available columns: {list(lookup_df.columns)}"
+            )
+        mask = mask & (lookup_df[column] == value)
+    
+    rows = lookup_df[mask]
 
     if len(rows) < 1:
-        raise ValueError("No sensitivity found with these values.")
+        raise ValueError("No matching row found with these values.")
     if len(rows) > 1:
         # print(
         #     f"Warning: multiple ({len(rows)}) sensitivities found with these values. Will use first row."
@@ -65,33 +69,33 @@ def get_row(
 
 
 def extrapolate_obs_time(
-    event_id: int,
     delay: u.Quantity,
-    extrapolation_df: pd.DataFrame,
+    lookup_df: pd.DataFrame,
     filters: dict[str, str | float | int] = {},
     other_info: list[str] = [],
-    event_id_column: str = "event_id",
+    delay_column: str = "obs_delay",
+    obs_time_column: str = "obs_time",
 ):
     """Estimate the required observation time for a given delay using interpolation.
 
     Uses logarithmic interpolation to estimate the observation time needed to detect
     an event at a specific delay time. The function looks up pre-computed observation
-    times from the extrapolation dataframe and interpolates between them. If the delay
+    times from the lookup dataframe and interpolates between them. If the delay
     exceeds the maximum value in the dataframe, a warning is issued and the value is
     extrapolated beyond the data range.
 
     Args:
-        event_id: The event identifier to look up.
         delay: Time delay from the event trigger, as an astropy Quantity with time units.
-        extrapolation_df: DataFrame containing pre-computed observation times at various
-            delays. Must contain columns for event ID, observation delay, and observation
-            time, along with any filter columns.
-        filters: Dictionary of additional column-value pairs to filter the dataframe.
+        lookup_df: DataFrame containing pre-computed observation times at various
+            delays. Must contain columns for observation delay, observation time,
+            and any filter columns.
+        filters: Dictionary of column-value pairs to filter the dataframe.
             Keys should be column names, values should be the values to match.
+            All filters must match for a row to be included.
         other_info: List of column names to include in the returned dictionary.
             These are extracted from the first matching row.
-        event_id_column: Name of the column containing event IDs. Defaults to
-            "event_id".
+        delay_column: Name of the column containing observation delays. Defaults to "obs_delay".
+        obs_time_column: Name of the column containing observation times. Defaults to "obs_time".
 
     Returns:
         dict: Dictionary containing:
@@ -102,21 +106,71 @@ def extrapolate_obs_time(
 
     Raises:
         ValueError: If the requested delay is below the minimum delay available in
-            the dataframe for this event.
+            the dataframe for the matching rows, or if the required columns don't exist.
     """
     res = {}
     delay = delay.to("s").value
-    event_info = extrapolation_df[extrapolation_df[event_id_column] == event_id]
+    event_info = lookup_df.copy()
+
+    # Validate that required columns exist
+    if delay_column not in event_info.columns:
+        res["error_message"] = (
+            f"Column '{delay_column}' (delay_column) does not exist in the dataframe. "
+            f"Available columns: {list(event_info.columns)}"
+        )
+        res["obs_time"] = -1
+        return res
+    
+    if obs_time_column not in event_info.columns:
+        res["error_message"] = (
+            f"Column '{obs_time_column}' (obs_time_column) does not exist in the dataframe. "
+            f"Available columns: {list(event_info.columns)}"
+        )
+        res["obs_time"] = -1
+        return res
 
     if filters:
         for key, value in filters.items():
+            if key not in event_info.columns:
+                res["error_message"] = (
+                    f"Column '{key}' specified in filters does not exist in the dataframe. "
+                    f"Available columns: {list(event_info.columns)}"
+                )
+                res["obs_time"] = -1
+                return res
             event_info = event_info[event_info[key] == value]
 
     if other_info:
+        if len(event_info) == 0:
+            res["error_message"] = (
+                f"No matching data found with filters {filters}"
+            )
+            res["obs_time"] = -1
+            return res
         for key in other_info:
+            if key not in event_info.columns:
+                res["error_message"] = (
+                    f"Column '{key}' specified in other_info does not exist in the dataframe."
+                )
+                res["obs_time"] = -1
+                return res
             res[key] = event_info.iloc[0][key]
 
-    event_dict = event_info.set_index("obs_delay")["obs_time"].to_dict()
+    if len(event_info) == 0:
+        res["error_message"] = (
+            f"No matching data found with filters {filters}"
+        )
+        res["obs_time"] = -1
+        return res
+
+    event_dict = event_info.set_index(delay_column)[obs_time_column].to_dict()
+
+    if not event_dict:
+        res["error_message"] = (
+            f"No matching data found with filters {filters}"
+        )
+        res["obs_time"] = -1
+        return res
 
     if delay < min(event_dict.keys()):
         res["error_message"] = (
@@ -154,82 +208,106 @@ def extrapolate_obs_time(
         res["obs_time"] = -1
         res["error_message"] = "Extrapolation failed for this simulation"
 
+    # Add filters to result dictionary
+    res.update(filters)
+
     return res
 
 
 def get_sensitivity(
-    event_id: int,
-    site: str,
-    zenith: int,
-    sens_df: pd.DataFrame | None = None,
+    lookup_df: pd.DataFrame | None = None,
     sensitivity_curve: list[float] | None = None,
     photon_flux_curve: list[float] | None = None,
-    ebl: bool = False,
-    config: str = "alpha",
-    duration: int = 1800,
+    observatory: str | None = None,
     radius: u.Quantity = 3.0 * u.deg,
     min_energy: u.Quantity = 0.02 * u.TeV,
     max_energy: u.Quantity = 10 * u.TeV,
-    event_id_column: str = "event_id",
+    **filters: str | float | int | bool,
 ):
     """Create a Sensitivity object for a given event and observation configuration.
 
     Constructs a Sensitivity instance either by looking up pre-computed sensitivity
-    curves from a dataframe or by using directly provided sensitivity and photon flux
-    curves. The sensitivity object is configured for the specified CTA observatory
-    site, energy range, and observation region.
+    curves from a lookup dataframe or by using directly provided sensitivity and photon flux
+    curves. The sensitivity object is configured for the specified observatory,
+    energy range, and observation region.
 
     Args:
-        event_id: The event identifier. Only used when sens_df is provided.
-        site: Observatory site name (e.g., "north" or "south").
-        zenith: Zenith angle in degrees for the observation.
-        sens_df: Optional DataFrame containing pre-computed sensitivity data. If provided,
+        lookup_df: Optional DataFrame containing pre-computed sensitivity data. If provided,
             sensitivity_curve and photon_flux_curve must be None.
         sensitivity_curve: Optional list of sensitivity values in erg cm⁻² s⁻¹. Must be
-            provided along with photon_flux_curve if sens_df is None.
+            provided along with photon_flux_curve if lookup_df is None.
         photon_flux_curve: Optional list of photon flux values in cm⁻² s⁻¹. Must be
-            provided along with sensitivity_curve if sens_df is None.
-        ebl: Whether EBL absorption is applied. Defaults to False.
-        config: IRF configuration name. Defaults to "alpha".
-        duration: Observation duration in seconds. Defaults to 1800.
+            provided along with sensitivity_curve if lookup_df is None.
+        observatory: Observatory name (e.g., "ctao_north", "ctao_south", "hess", "magic").
+            Must be one of the valid observatory locations from gammapy.data.observatory_locations.
+            Required if lookup_df is None. If lookup_df is provided and observatory is None,
+            will attempt to construct from "irf_site" in filters (e.g., "north" -> "ctao_north").
         radius: Angular radius of the observation region. Defaults to 3.0 degrees.
         min_energy: Minimum energy for the sensitivity calculation. Defaults to 0.02 TeV.
         max_energy: Maximum energy for the sensitivity calculation. Defaults to 10 TeV.
-        event_id_column: Name of the column containing event IDs in sens_df. Defaults to
-            "event_id".
+        **filters: Column-value pairs to filter the dataframe when lookup_df is provided.
+            Keyword arguments should be column names, values should be the values to match.
+            This allows filtering on any column in the dataframe.
 
     Returns:
         Sensitivity: A configured Sensitivity object ready for use in exposure calculations.
 
     Raises:
-        ValueError: If both sens_df and curves are provided, or if neither sens_df nor
-            both curves are provided, or if sensitivity_curve is not a list or Quantity.
+        ValueError: If both lookup_df and curves are provided, if neither lookup_df nor
+            both curves are provided, if sensitivity_curve is not a list or Quantity,
+            or if observatory cannot be determined when needed.
+
+    Example:
+        >>> # Using lookup_df with filters
+        >>> sens = get_sensitivity(
+        ...     lookup_df=df,
+        ...     event_id=42,
+        ...     irf_zenith=20,
+        ...     irf_ebl=False,
+        ...     observatory="ctao_north",
+        ... )
+        >>> # Using curves directly
+        >>> sens = get_sensitivity(
+        ...     sensitivity_curve=[1e-10, 1e-11],
+        ...     photon_flux_curve=[1e-9, 1e-10],
+        ...     observatory="ctao_south",
+        ... )
     """
-    if sens_df is not None:
+    if lookup_df is not None:
         if sensitivity_curve is not None or photon_flux_curve is not None:
             raise ValueError(
-                "If sens_df is provided, sensitivity_curve and photon_flux_curve must both be None."
+                "If lookup_df is provided, sensitivity_curve and photon_flux_curve must both be None."
             )
     else:
         if sensitivity_curve is None or photon_flux_curve is None:
             raise ValueError(
-                "Must provide either sens_df or both sensitivity_curve and photon_flux_curve"
+                "Must provide either lookup_df or both sensitivity_curve and photon_flux_curve"
             )
 
-    if sens_df is not None:
-        row = get_row(
-            sens_df=sens_df,
-            event_id=event_id,
-            site=site,
-            zenith=zenith,
-            ebl=ebl,
-            config=config,
-            duration=duration,
-            event_id_column=event_id_column,
-        )
-
+    # Determine observatory name
+    if lookup_df is not None:
+        # Get row from dataframe using filters
+        row = get_row(lookup_df=lookup_df, **filters)
+        
         sensitivity_curve = row["sensitivity_curve"]
         photon_flux_curve = row["photon_flux_curve"]
+        
+        # If observatory not provided, try to construct from irf_site if available
+        if observatory is None:
+            if "irf_site" in filters:
+                site = str(filters["irf_site"])
+                observatory = f"ctao_{site}"
+            else:
+                # If no observatory and no irf_site, we can't determine it
+                # But we'll allow this - observatory might not be strictly necessary
+                # for some use cases. Let's default to None and let Sensitivity handle it.
+                pass
+    else:
+        # Using curves directly - observatory must be provided
+        if observatory is None:
+            raise ValueError(
+                "observatory parameter is required when providing sensitivity_curve and photon_flux_curve directly."
+            )
 
     if isinstance(sensitivity_curve, (list, u.Quantity)):
         n_sensitivity_points = len(sensitivity_curve)
@@ -239,7 +317,7 @@ def get_sensitivity(
         )
 
     sens = sensitivity.Sensitivity(
-        observatory=f"ctao_{site}",
+        observatory=observatory,
         radius=radius,
         min_energy=min_energy,
         max_energy=max_energy,
@@ -252,20 +330,12 @@ def get_sensitivity(
 
 
 def get_exposure(
-    event_id: int,
     delay: u.Quantity,
-    site: str,
-    zenith: int,
-    grb_filepath: Path | str | None = None,
-    sens_df: pd.DataFrame | None = None,
-    event_id_column: str = "event_id",
+    source_filepath: Path | str | None = None,
+    lookup_df: pd.DataFrame | Path | str | None = None,
     sensitivity_curve: list | None = None,
     photon_flux_curve: list | None = None,
-    extrapolation_df: pd.DataFrame | Path | str | None = None,
-    ebl: str | None = None,
     redshift: float | None = None,
-    config: str = "alpha",
-    duration: int = 1800,
     radius: u.Quantity = 3.0 * u.deg,
     min_energy: u.Quantity = 0.02 * u.TeV,
     max_energy: u.Quantity = 10 * u.TeV,
@@ -273,40 +343,35 @@ def get_exposure(
     max_time: u.Quantity = 12 * u.h,
     sensitivity_mode: Literal["sensitivity", "photon_flux"] = "sensitivity",
     n_time_steps: int = 10,
+    other_info: list[str] = [],
+    delay_column: str = "obs_delay",
+    obs_time_column: str = "obs_time",
+    **filters: str | float | int | bool,
 ):
     """Calculate exposure information for observing an event with a spectrum evolving in time.
 
     Determines the required observation time and other exposure parameters for detecting
     an event at a given delay. This function supports two modes of operation:
 
-    1. **Extrapolation mode**: If extrapolation_df is provided, uses pre-computed
+    1. **Lookup mode**: If lookup_df is provided, uses pre-computed
        observation times from simulations to quickly estimate the exposure time via
        interpolation. This is faster but requires pre-existing simulation data.
 
-    2. **Direct calculation mode**: If grb_filepath is provided, loads the source
+    2. **Direct calculation mode**: If source_filepath is provided, loads the source
        spectrum and performs a full observation calculation using the Source.observe()
        method. This is more accurate but computationally intensive.
 
     Args:
-        event_id: The event identifier.
         delay: Time delay from the event trigger, as an astropy Quantity with time units.
-        site: Observatory site name (e.g., "north" or "south").
-        zenith: Zenith angle in degrees for the observation.
-        grb_filepath: Path to the GRB source file. Required if extrapolation_df is None.
-        sens_df: Optional DataFrame containing pre-computed sensitivity data.
-        event_id_column: Name of the column containing event IDs. Defaults to
-            "event_id".
+        source_filepath: Path to the source file. Required if lookup_df is None.
+        lookup_df: Optional DataFrame or path to parquet file containing
+            pre-computed observation times or sensitivity data. If provided, uses lookup mode.
         sensitivity_curve: Optional list of sensitivity values. Must be provided with
-            photon_flux_curve if sens_df is None.
+            photon_flux_curve if lookup_df is None.
         photon_flux_curve: Optional list of photon flux values. Must be provided with
-            sensitivity_curve if sens_df is None.
-        extrapolation_df: Optional DataFrame or path to parquet file containing
-            pre-computed observation times. If provided, uses interpolation mode.
-        ebl: Optional EBL model name to apply for absorption. If None, no EBL is applied.
+            sensitivity_curve if lookup_df is None.
         redshift: Optional redshift value. If provided, overrides the redshift from
             the source file for EBL calculations.
-        config: IRF configuration name. Defaults to "alpha".
-        duration: Observation duration in seconds for sensitivity lookup. Defaults to 1800.
         radius: Angular radius of the observation region. Defaults to 3.0 degrees.
         min_energy: Minimum energy for the calculation. Defaults to 0.02 TeV.
         max_energy: Maximum energy for the calculation. Defaults to 10 TeV.
@@ -315,9 +380,26 @@ def get_exposure(
         sensitivity_mode: Whether to use "sensitivity" or "photon_flux" for detection
             calculations. Defaults to "sensitivity".
         n_time_steps: Number of time steps for the observation calculation. Defaults to 10.
+        other_info: List of column names to include in the returned dictionary when using
+            lookup mode. These are extracted from the lookup dataframe. Defaults to
+            ["long", "lat", "eiso", "dist", "theta_view", "irf_ebl_model"].
+        delay_column: Name of the column containing observation delays in lookup_df.
+            Defaults to "obs_delay".
+        obs_time_column: Name of the column containing observation times in lookup_df.
+            Defaults to "obs_time".
+        **filters: Column-value pairs to filter the dataframes. Keyword arguments should
+            be column names, values should be the values to match. This allows filtering
+            on any column in the dataframe. Common filters include:
+            - event_id: Event identifier (if present in lookup table)
+            - irf_site: Observatory site name (e.g., "north" or "south")
+            - irf_zenith: Zenith angle in degrees
+            - irf_ebl: Boolean indicating if EBL is used (True/False)
+            - irf_ebl_model: EBL model name (e.g., "franceschini", "dominguez11")
+            - irf_config: IRF configuration name (default: "alpha")
+            - irf_duration: Observation duration in seconds (default: 1800)
 
     Returns:
-        dict: Dictionary containing exposure information. In extrapolation mode, includes:
+        dict: Dictionary containing exposure information. In lookup mode, includes:
             - "obs_time": Observation time in seconds (or -1 if not detectable)
             - "start_time": Start time of observation
             - "end_time": End time of observation (or -1 if not detectable)
@@ -334,9 +416,9 @@ def get_exposure(
         In direct calculation mode, returns the result from Source.observe().
 
     Raises:
-        ValueError: If unit types are incorrect, if extrapolation_df is None and
-            grb_filepath is not provided, or if delay is below the minimum in the
-            extrapolation dataframe.
+        ValueError: If unit types are incorrect, if lookup_df is None and
+            source_filepath is not provided, or if delay is below the minimum in the
+            lookup dataframe.
     """
     if delay.unit.physical_type != "time":
         raise ValueError(f"delay must be a time quantity, got {delay}")
@@ -360,17 +442,35 @@ def get_exposure(
     target_precision = target_precision.to("s")
     max_time = max_time.to("s")
 
-    if extrapolation_df is not None:
-        if isinstance(extrapolation_df, (Path, str)):
-            extrapolation_df = pd.read_parquet(extrapolation_df)
+    # Extract event_id from filters if present (for return value)
+    event_id = filters.get("event_id", None)
+
+    # Determine observatory for get_sensitivity
+    # Try to extract from filters, or construct from irf_site if available
+    observatory = filters.get("observatory", None)
+    if observatory is None and "irf_site" in filters:
+        site = str(filters["irf_site"])
+        observatory = f"ctao_{site}"
+
+    if lookup_df is not None:
+        if isinstance(lookup_df, (Path, str)):
+            lookup_df = pd.read_parquet(lookup_df)
+
+        # Build filters dict for extrapolate_obs_time (exclude observatory from filters)
+        # observatory is not a column in the dataframe
+        lookup_filters = {
+            k: v
+            for k, v in filters.items()
+            if k != "observatory"
+        }
 
         obs_info = extrapolate_obs_time(
-            event_id=event_id,
             delay=delay,
-            extrapolation_df=extrapolation_df,
-            filters={"irf_site": site, "irf_zenith": zenith},
-            other_info=["long", "lat", "eiso", "dist", "theta_view", "irf_ebl_model"],
-            event_id_column=event_id_column,
+            lookup_df=lookup_df,
+            filters=lookup_filters,
+            other_info=other_info,
+            delay_column=delay_column,
+            obs_time_column=obs_time_column,
         )
 
         obs_time = obs_info["obs_time"]
@@ -383,51 +483,43 @@ def get_exposure(
             else:
                 obs_time = round(obs_time / target_precision.value) * target_precision
 
-        # rename key
-        obs_info["angle"] = obs_info.pop("theta_view") * u.deg
-        obs_info["ebl_model"] = obs_info.pop("irf_ebl_model")
-
-        # add other units
-        obs_info["long"] = obs_info["long"] * u.rad
-        obs_info["lat"] = obs_info["lat"] * u.rad
-        obs_info["eiso"] = obs_info["eiso"] * u.erg
-        obs_info["dist"] = obs_info["dist"] * u.kpc
-
-        other_info = {
+        other_info_dict = {
             "min_energy": min_energy,
             "max_energy": max_energy,
             "seen": True if obs_time > 0 else False,
             "obs_time": obs_time if obs_time > 0 else -1,
             "start_time": delay,
             "end_time": delay + obs_time if obs_time > 0 else -1,
-            "id": event_id,
         }
+        # Add event_id to result if it was in filters
+        if event_id is not None:
+            other_info_dict["id"] = event_id
 
-        return {**obs_info, **other_info}
+        # Add filters to result dictionary
+        result = {**obs_info, **other_info_dict, **filters}
+        return result
 
     else:
-        if not grb_filepath:
+        if not source_filepath:
             raise ValueError(
-                "Must provide grb_filepath if extrapolation_df is not provided"
+                "Must provide source_filepath if lookup_df is not provided"
             )
 
+    # Extract ebl from filters if present, otherwise default to None
+    ebl = filters.get("irf_ebl", None)
+
     sens = get_sensitivity(
-        event_id=event_id,
-        site=site,
-        zenith=zenith,
-        sens_df=sens_df,
+        lookup_df=lookup_df,
         sensitivity_curve=sensitivity_curve,
         photon_flux_curve=photon_flux_curve,
-        ebl=bool(ebl),
-        config=config,
-        duration=duration,
+        observatory=observatory,
         radius=radius,
         min_energy=min_energy,
         max_energy=max_energy,
-        event_id_column=event_id_column,
+        **filters,
     )
 
-    grb = source.Source(grb_filepath, min_energy, max_energy, ebl=ebl)
+    grb = source.Source(source_filepath, min_energy, max_energy, ebl=ebl)
 
     if redshift is not None:
         grb.set_ebl_model(ebl, z=redshift)
@@ -444,5 +536,8 @@ def get_exposure(
             sensitivity_mode=sensitivity_mode,
             n_time_steps=n_time_steps,
         )
+
+    # Add filters to result dictionary
+    result.update(filters)
 
     return result
