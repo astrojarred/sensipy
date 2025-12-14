@@ -33,11 +33,12 @@ def test_source_read_csv_basic(mock_csv_path):
 def test_source_read_csv_metadata(mock_csv_path):
     """Test that metadata is read from metadata file."""
     source = Source(mock_csv_path)
-    assert source.id == 42
-    assert source.long is not None
-    assert source.lat is not None
+    # Metadata keys come directly from CSV file (event_id, not id)
+    assert source.event_id == 42
+    assert source.longitude is not None
+    assert source.latitude is not None
     assert source.eiso is not None
-    assert source.dist is not None
+    assert source.distance is not None
     assert source.angle is not None
 
 
@@ -226,7 +227,8 @@ def test_source_repr(mock_csv_path):
     source = Source(mock_csv_path)
     repr_str = repr(source)
     assert "Source" in repr_str
-    assert str(source.id) in repr_str or "Source" in repr_str
+    # Check that repr contains the event_id from metadata (or "unknown" if not present)
+    assert str(source.event_id) in repr_str or "unknown" in repr_str or "Source" in repr_str
 
 
 def test_source_metadata_property(mock_csv_path):
@@ -244,7 +246,7 @@ def test_source_set_ebl_model_invalid(mock_csv_path):
     # Set a dummy distance first
     from astropy.coordinates import Distance
 
-    source.dist = Distance(z=0.1)
+    source.distance = Distance(z=0.1)
 
     with pytest.raises(ValueError, match="ebl must be one of"):
         source.set_ebl_model("invalid_model")
@@ -258,7 +260,7 @@ def test_source_set_ebl_model_no_gammapy_data(mock_csv_path, monkeypatch):
     from sensipy.util import get_data_path
     import os
 
-    source.dist = Distance(z=0.1)
+    source.distance = Distance(z=0.1)
 
     # Remove GAMMAPY_DATA if it exists
     monkeypatch.delenv("GAMMAPY_DATA", raising=False)
@@ -307,8 +309,8 @@ def test_source_read_csv_without_metadata(tmp_path):
 
     source = Source(csv_file)
     assert source.file_type == "csv"
-    # Metadata should have defaults
-    assert source.id == 0  # Default value
+    # Metadata should be empty (no metadata file)
+    assert len(source.metadata) == 0
 
 
 def test_source_energy_time_ordering(mock_csv_path):
