@@ -126,18 +126,9 @@ source = Source(
 
 Metadata provides additional information about the source, such as sky coordinates, distance, energy output, and jet properties. This information is particularly useful for GW event followup simulations.
 
-### Supported Metadata Fields
+### User-Defined Metadata
 
-When present in your data files, sensipy will extract the following metadata:
-
-| Field                  | Description                 | Units   |
-| ---------------------- | --------------------------- | ------- |
-| `long` or `ra`         | Right Ascension / Longitude | radians |
-| `lat` or `dec`         | Declination / Latitude      | radians |
-| `eiso`                 | Isotropic energy output     | erg     |
-| `dist` or `distance`   | Luminosity distance         | kpc     |
-| `angle` or `jet_angle` | Jet opening angle           | degrees |
-| `fluence`              | Energy fluence              | erg/cm² |
+sensipy uses a **completely user-defined metadata system**. There are no built-in metadata fields—you define whatever metadata keys you need for your analysis. Metadata is stored in a dictionary and can be accessed via attribute notation (similar to pandas DataFrame columns).
 
 ### CSV Metadata File
 
@@ -148,33 +139,78 @@ GRB_42_mock.csv
 GRB_42_mock_metadata.csv
 ```
 
-Example metadata CSV:
+The metadata CSV file should have columns: `parameter`, `value`, and optionally `units`:
 
 ```csv
-long,lat,eiso,dist,angle
-2.623,0.186,2.67e+50,466000,24.521
+parameter,value,units
+event_id,42.0,
+longitude,0.0,rad
+latitude,1.0,rad
+distance,100000.0,kpc
 ```
+
+Any parameter names you include will be stored in the metadata dictionary. The units column is optional—if provided, values will be converted to [astropy Quantity](https://docs.astropy.org/en/stable/units/quantity.html) objects with the specified units.
 
 ### FITS Metadata
 
-For FITS files, metadata can be included in the header of HDU[0]:
+For FITS files, metadata can be included in the header of HDU[0] using a **flexible format**. sensipy reads **any non-standard FITS header keys** and converts them to metadata.
+
+#### FITS Header Format
+
+The FITS header format uses a comment field to specify the metadata slug and optional unit:
 
 ```python
 from astropy.io import fits
 
-# Read FITS metadata
-with fits.open("GRB_42_mock.fits") as hdul:
-    header = hdul[0].header
-    long = header.get('LONG')
-    lat = header.get('LAT')
-    eiso = header.get('EISO')
-    dist = header.get('DIST')
+header = fits.Header()
+# Format: header["FITS_KEY"] = (value, "slug [unit]")
+header["EVENT_ID"] = (42, "event_id")
+header["LONG"] = (0.0, "longitude [rad]")
+header["LAT"] = (1.0, "latitude [rad]")
+header["DISTANCE"] = (100000.0, "distance [kpc]")
+header["EISO"] = (2e50, "eiso [erg]")
+
+# Empty values are ignored
+header["AUTHOR"] = ("", "author")  # This will be skipped
+
+# Keys without comments use the header key name (lowercase) as the slug
+header["CUSTOM_FIELD"] = (123.45, "")  # Stored as "custom_field"
+```
+
+**Format rules:**
+- **Value**: The actual metadata value (number or string)
+- **Comment**: Format `"slug [unit]"` where:
+  - `slug` is the metadata key name (will be converted to lowercase, spaces/special chars become underscores)
+  - `[unit]` is optional - if provided, the value is converted to an `astropy.units.Quantity` or `astropy.coordinates.Distance` object
+- **Empty values**: Header entries with empty string values are ignored
+- **No comment**: If no comment is provided, the header key name (lowercase) is used as the slug
+
+**Special handling:**
+- Keys named `distance` or `dist` with units are converted to `astropy.coordinates.Distance` objects
+- Standard FITS keywords (like `SIMPLE`, `BITPIX`, `NAXIS`, etc.) are automatically skipped
+
+**Example:**
+
+```python
+from sensipy.source import Source
+from sensipy.util import get_data_path
+
+# Load FITS file with flexible metadata
+mock_fits_path = get_data_path("mock_data/GRB_42_mock.fits")
+source = Source(mock_fits_path)
+
+# Access metadata via attribute notation
+print(f"Event ID: {source.event_id}")      # 42
+print(f"Longitude: {source.longitude}")    # 0.0 rad
+print(f"Latitude: {source.latitude}")      # 1.0 rad
+print(f"Distance: {source.distance}")      # 100000.0 kpc (Distance object)
 ```
 
 ### Accessing Metadata
 
-Once loaded, metadata is accessible through the `metadata` property:
+Once loaded, metadata can be accessed in two ways:
 
+1. **Via attribute notation** (recommended, similar to pandas):
 ```python
 from sensipy.source import Source
 from sensipy.util import get_data_path
@@ -182,13 +218,45 @@ from sensipy.util import get_data_path
 mock_data_path = get_data_path("mock_data/GRB_42_mock.csv")
 source = Source(filepath=str(mock_data_path))
 
-# Access metadata
-meta = source.metadata
-print(f"Event ID: {meta.get('id')}")
-print(f"Distance: {meta.get('dist')} kpc")
-print(f"Isotropic energy: {meta.get('eiso')} erg")
-print(f"Coordinates: RA={meta.get('long')}, Dec={meta.get('lat')}")
+# Access metadata via attributes (using keys from your metadata file)
+print(f"Event ID: {source.event_id}")
+print(f"Distance: {source.distance}")
+print(f"Coordinates: RA={source.longitude}, Dec={source.latitude}")
+
+# Note: Only keys present in your metadata file are available
+# The example above uses keys from the mock data (event_id, longitude, latitude, distance)
 ```
+
+2. **Via the metadata dictionary**:
+```python
+# Access the full metadata dictionary
+meta = source.metadata
+print(f"All metadata keys: {list(meta.keys())}")
+print(f"Event ID: {meta.get('event_id')}")
+print(f"Distance: {meta.get('distance')}")
+```
+
+### Setting Custom Metadata
+
+You can add or modify metadata at any time:
+
+```python
+# Set custom metadata fields
+source.my_custom_field = "some value"
+source.another_field = 123.45
+
+# Access them via attribute notation
+print(source.my_custom_field)  # "some value"
+print(source.another_field)    # 123.45
+
+# Or via the metadata dictionary
+print(source.metadata['my_custom_field'])
+```
+
+<Aside type="note">
+  Metadata keys are case-sensitive and must match exactly. Use the same key names
+  that appear in your metadata file or FITS header when accessing via attributes.
+</Aside>
 
 ## Text File Directory Format
 
