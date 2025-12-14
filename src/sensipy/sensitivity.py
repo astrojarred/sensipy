@@ -464,7 +464,7 @@ class Sensitivity:
                         amplitude=starting_amplitude,
                         reference=reference,
                     ),
-                    redshift=source.dist.z if source.dist is not None else 0,
+                    redshift=source.distance.z if hasattr(source, 'distance') and source.distance is not None else 0,
                     sensitivity_type="integral",
                     offset=offset,
                     n_bins=n_bins,
@@ -474,7 +474,7 @@ class Sensitivity:
                 s = self.get_sensitivity_from_model(
                     t=t,
                     spectral_model=source.get_template_spectrum(t),
-                    redshift=source.dist.z if source.dist is not None else 0,
+                    redshift=source.distance.z if hasattr(source, 'distance') and source.distance is not None else 0,
                     sensitivity_type="integral",
                     offset=offset,
                     n_bins=n_bins,
