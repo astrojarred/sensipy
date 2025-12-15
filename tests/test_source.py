@@ -365,18 +365,18 @@ def test_source_observe_with_irf(irf_house, mock_csv_path):
     )
 
     # Load in a GRB and add EBL (matching quick-test.ipynb)
-    grb = Source(mock_csv_path, min_energy=min_energy, max_energy=max_energy, ebl="franceschini")
+    event = Source(mock_csv_path, min_energy=min_energy, max_energy=max_energy, ebl="franceschini")
 
     # Generate sensitivity curve first (required for observe)
     # Suppress expected power law warning in tests
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", message="Using a power law model for sensitivity calculation")
-        sens.get_sensitivity_curve(source=grb)
+        sens.get_sensitivity_curve(source=event)
 
     # Simulate the observation (matching quick-test.ipynb lines 1-13)
     delay_time = 30 * u.min
 
-    res = grb.observe(
+    res = event.observe(
         sensitivity=sens,
         start_time=delay_time,
         min_energy=min_energy,
@@ -397,7 +397,7 @@ def test_source_observe_with_irf(irf_house, mock_csv_path):
     assert res["ebl_model"] == "franceschini"
 
     # Verify source seen status
-    assert grb.seen is True or grb.seen is False  # Can be either depending on detectability
+    assert event.seen is True or event.seen is False  # Can be either depending on detectability
 
 
 # ============================================================================

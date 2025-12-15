@@ -525,14 +525,14 @@ def get_exposure(
         **filters,
     )
 
-    grb = source.Source(source_filepath, min_energy, max_energy, ebl=ebl)
+    event = source.Source(source_filepath, min_energy, max_energy, ebl=ebl)
 
     if redshift is not None:
-        grb.set_ebl_model(ebl, z=redshift)
+        event.set_ebl_model(ebl, z=redshift)
 
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", r"All-NaN slice encountered")
-        result = grb.observe(
+        result = event.observe(
             sens,
             start_time=delay,
             min_energy=min_energy,
