@@ -29,7 +29,7 @@ import pandas as pd
 from sensipy.util import get_data_path
 
 # Load lookup table (sample data included with sensipy)
-lookup_path = get_data_path("sample_lookup_table.parquet")
+lookup_path = get_data_path("mock_data/sample_lookup_table.parquet")
 df = pd.read_parquet(lookup_path)
 
 print(df.columns)
@@ -66,7 +66,7 @@ import astropy.units as u
 import pandas as pd
 
 # Load lookup table (sample data included with sensipy)
-lookup_path = get_data_path("sample_lookup_table.parquet")
+lookup_path = get_data_path("mock_data/sample_lookup_table.parquet")
 lookup_df = pd.read_parquet(lookup_path)
 
 # Get exposure for a specific event
@@ -164,7 +164,7 @@ The `get_exposure` function uses **logarithmic interpolation** to estimate obser
     import pandas as pd
 
     # Load lookup table once (cache for multiple queries)
-    lookup_path = get_data_path("sample_lookup_table.parquet")
+    lookup_path = get_data_path("mock_data/sample_lookup_table.parquet")
     lookup_df = pd.read_parquet(lookup_path)
 
     # Query a single event
@@ -195,7 +195,7 @@ The `get_exposure` function uses **logarithmic interpolation** to estimate obser
     import numpy as np
     import pandas as pd
 
-    lookup_path = get_data_path("sample_lookup_table.parquet")
+    lookup_path = get_data_path("mock_data/sample_lookup_table.parquet")
     lookup_df = pd.read_parquet(lookup_path)
 
     # Query multiple events
@@ -234,12 +234,12 @@ The `get_exposure` function uses **logarithmic interpolation** to estimate obser
     import pandas as pd
     import matplotlib.pyplot as plt
 
-    lookup_path = get_data_path("sample_lookup_table.parquet")
+    lookup_path = get_data_path("mock_data/sample_lookup_table.parquet")
     lookup_df = pd.read_parquet(lookup_path)
 
     # Scan over delays for one event
     event_id = 4
-    delays = np.logspace(0, 4, 30) * u.s  # 1s to 10,000s
+    delays = np.logspace(1, 4, 30) * u.s  # 1s to 10,000s
     obs_times = []
 
     for delay in delays:
@@ -281,7 +281,7 @@ import astropy.units as u
 import pandas as pd
 import numpy as np
 
-lookup_path = get_data_path("sample_lookup_table.parquet")
+lookup_path = get_data_path("mock_data/sample_lookup_table.parquet")
 lookup_df = pd.read_parquet(lookup_path)
 
 # Get all unique event IDs
@@ -329,7 +329,7 @@ from sensipy.followup import get_row
 from sensipy.util import get_data_path
 import pandas as pd
 
-lookup_path = get_data_path("sample_lookup_table.parquet")
+lookup_path = get_data_path("mock_data/sample_lookup_table.parquet")
 lookup_df = pd.read_parquet(lookup_path)
 
 # Get specific configuration for an event
@@ -364,16 +364,20 @@ from sensipy.util import get_data_path
 import astropy.units as u
 import pandas as pd
 
-lookup_path = get_data_path("sample_lookup_table.parquet")
+lookup_path = get_data_path("mock_data/sample_lookup_table.parquet")
 lookup_df = pd.read_parquet(lookup_path)
 
 # Manually perform interpolation
 result = extrapolate_obs_time(
-    event_id=1,
     delay=100 * u.s,
     lookup_df=lookup_df,
-    filters={'irf_site': 'south', 'irf_zenith': 20, 'irf_ebl': 'franceschini'},
-    other_info=['long', 'lat', 'eiso'],  # Additional fields to include
+    filters={
+        'event_id': 1, 
+        'irf_site': 'south',     
+        'irf_zenith': 20, 
+        'irf_ebl_model': 'franceschini',
+    },
+    other_info=['long', 'lat', 'dist'],  # Additional fields to include
 )
 ```
 
@@ -388,7 +392,7 @@ from sensipy.sensitivity import Sensitivity
 import astropy.units as u
 import pandas as pd
 
-lookup_path = get_data_path("sample_lookup_table.parquet")
+lookup_path = get_data_path("mock_data/sample_lookup_table.parquet")
 lookup_df = pd.read_parquet(lookup_path)
 
 # Note: get_sensitivity requires sensitivity_curve and photon_flux_curve columns
@@ -430,7 +434,7 @@ from sensipy.util import get_data_path
 import pandas as pd
 
 # Load once at the start of your script/notebook
-lookup_path = get_data_path("sample_lookup_table.parquet")
+lookup_path = get_data_path("mock_data/sample_lookup_table.parquet")
 LOOKUP_TABLE = pd.read_parquet(lookup_path)
 
 # Reuse for all queries
@@ -540,38 +544,6 @@ for event_file in event_files:
 df = pd.DataFrame(results)
 df.to_parquet("my_lookup_table.parquet")
 ```
-
-## Troubleshooting
-
-### Common Issues
-
-**Problem**: "No matching rows found in lookup table"
-
-**Solution**:
-
-- Verify the event ID exists in the table
-- Check that site/zenith/EBL combination exists
-- Use `get_row()` to debug what's available
-
----
-
-**Problem**: Interpolation returns unrealistic values
-
-**Solution**:
-
-- Check that the lookup table has sufficient delay points for interpolation
-- Verify the delay range covers your query point
-- The table may not have data for this event—try a different one
-
----
-
-**Problem**: Very slow performance
-
-**Solution**:
-
-- Load the DataFrame once and cache it (don't reload from file repeatedly)
-- Use Parquet instead of CSV
-- Pre-filter the DataFrame to reduce size
 
 ## Next Steps
 
