@@ -4,6 +4,7 @@ This script generates all plots used in the documentation.
 Add new plot generation functions here as needed.
 """
 
+import argparse
 import matplotlib.pyplot as plt
 import numpy as np
 from astropy import units as u
@@ -12,6 +13,8 @@ from typing import Optional
 
 from sensipy.source import Source
 from sensipy.sensitivity import Sensitivity
+from sensipy.detectability import LookupData, create_heatmap_grid
+from sensipy.data.create_mock_lookup import create_mock_lookup_table
 from sensipy.util import get_data_path
 
 
@@ -473,6 +476,108 @@ class PlotGenerator:
         print("  - sensitivity_integral_example.png")
         print("  - sensitivity_differential_example.png")
 
+    def generate_detectability_plots(self):
+        """Generate plots for detectability analysis documentation."""
+        import tempfile
+        
+        # Create temporary directory for mock data
+        with tempfile.TemporaryDirectory() as tmpdir:
+            
+            # Create mock lookup table
+            lookup_path = create_mock_lookup_table(
+                n_events=100,
+                output_filename="detectability_lookup.parquet",
+                output_dir=tmpdir,
+                use_random_metadata=True,
+                seed=42,
+            )
+            
+            # Example 1: Basic detectability heatmap
+            data = LookupData(lookup_path)
+            data.set_observation_times(np.logspace(1, np.log10(3600 + 0.1), 10, dtype=int))
+            
+            fig, ax = plt.subplots(figsize=(10, 8))
+            data.plot(
+                ax=ax,
+                title="Source Detectability",
+                return_ax=True,
+            )
+            plt.tight_layout()
+            plt.savefig(
+                self.output_dir / "detectability_basic.png",
+                dpi=150,
+                bbox_inches="tight",
+            )
+            plt.close()
+            
+            # Example 2: Custom filtering
+            data2 = LookupData(lookup_path)
+            data2.set_filters(
+                ("irf_site", "==", "south"),
+                ("irf_zenith", "<=", 40),
+            )
+            data2.set_observation_times([round(i) for i in np.logspace(1, np.log10(7200), 10)])
+            
+            fig, ax = plt.subplots(figsize=(10, 8))
+            data2.plot(
+                ax=ax,
+                title="Detectability: South Site, Low Zenith, Events 1-3",
+                as_percent=True,
+                color_scheme="viridis",
+                return_ax=True,
+            )
+            plt.tight_layout()
+            plt.savefig(
+                self.output_dir / "detectability_filtered.png",
+                dpi=150,
+                bbox_inches="tight",
+            )
+            plt.close()
+            
+            # Example 3: Grid of heatmaps
+            observation_times = np.logspace(1, np.log10(3600), 10, dtype=int)
+            
+            data_north_z20 = LookupData(lookup_path)
+            data_north_z20.set_filters(("irf_site", "==", "north"), ("irf_zenith", "==", 20))
+            data_north_z20.set_observation_times(observation_times)
+            
+            data_north_z40 = LookupData(lookup_path)
+            data_north_z40.set_filters(("irf_site", "==", "north"), ("irf_zenith", "==", 40))
+            data_north_z40.set_observation_times(observation_times)
+            
+            data_south_z20 = LookupData(lookup_path)
+            data_south_z20.set_filters(("irf_site", "==", "south"), ("irf_zenith", "==", 20))
+            data_south_z20.set_observation_times(observation_times)
+            
+            data_south_z40 = LookupData(lookup_path)
+            data_south_z40.set_filters(("irf_site", "==", "south"), ("irf_zenith", "==", 40))
+            data_south_z40.set_observation_times(observation_times)
+            
+            fig, axes = create_heatmap_grid(
+                [data_north_z20, data_north_z40, data_south_z20, data_south_z40],
+                grid_size=(2, 2),
+                title="Detectability Comparison: Site and Zenith Configurations",
+                subtitles=[
+                    "North, z20",
+                    "North, z40",
+                    "South, z20",
+                    "South, z40",
+                ],
+                cmap="mako",
+                square=True,
+            )
+            plt.savefig(
+                self.output_dir / "detectability_grid.png",
+                dpi=150,
+                bbox_inches="tight",
+            )
+            plt.close()
+        
+        print("Generated detectability plots:")
+        print("  - detectability_basic.png")
+        print("  - detectability_filtered.png")
+        print("  - detectability_grid.png")
+
     def generate_all(self):
         """Generate all documentation plots."""
         print("Generating documentation plots...")
@@ -481,14 +586,48 @@ class PlotGenerator:
         self.generate_spectral_plots()
         self.generate_sensitivity_plots()
         self.generate_direct_sensitivity_plots()
+        self.generate_detectability_plots()
 
         print(f"\nAll plots saved to {self.output_dir}")
 
 
 def main():
     """Main entry point for plot generation."""
-    generator = PlotGenerator()
-    generator.generate_all()
+    
+    parser = argparse.ArgumentParser(
+        description="Generate plots for documentation",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument(
+        "-p",
+        "--plot-type",
+        nargs="?",
+        default="all",
+        choices=["all", "spectral", "sensitivity", "direct_sensitivity", "detectability"],
+        help="Type of plot to generate (default: all)",
+    )
+    parser.add_argument(
+        "-o",
+        "--output-dir",
+        type=Path,
+        default=None,
+        help="Output directory for plots (default: docs/public)",
+    )
+    
+    args = parser.parse_args()
+    
+    generator = PlotGenerator(output_dir=args.output_dir)
+    
+    if args.plot_type == "all":
+        generator.generate_all()
+    elif args.plot_type == "spectral":
+        generator.generate_spectral_plots()
+    elif args.plot_type == "sensitivity":
+        generator.generate_sensitivity_plots()
+    elif args.plot_type == "direct_sensitivity":
+        generator.generate_direct_sensitivity_plots()
+    elif args.plot_type == "detectability":
+        generator.generate_detectability_plots()
 
 
 if __name__ == "__main__":

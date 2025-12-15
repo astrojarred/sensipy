@@ -1,0 +1,230 @@
+---
+title: detectability - Detectability Analysis API
+description: API reference for detectability analysis and visualization functions.
+---
+
+import {Aside} from "@astrojs/starlight/components";
+
+## LookupData
+
+Main class for analyzing and visualizing detectability data from lookup tables.
+
+### Signature
+
+```python
+class LookupData(
+    input_file: str | Path,
+    delay_column: str = "obs_delay",
+    obs_time_column: str = "obs_time",
+)
+```
+
+### Parameters
+
+| Parameter | Type | Description |
+| --------- | ---- | ----------- |
+| `input_file` | `str \| Path` | Path to lookup table file (Parquet or CSV) |
+| `delay_column` | `str` | Name of delay column (default: `"obs_delay"`) |
+| `obs_time_column` | `str` | Name of observation time column (default: `"obs_time"`) |
+
+### Attributes
+
+| Attribute | Type | Description |
+| --------- | ---- | ----------- |
+| `df` | `pd.DataFrame` | Current (filtered) data frame |
+| `observation_times` | `np.ndarray` | Observation times used for calculations |
+| `results` | `pd.DataFrame` | Calculated detectability results with columns: `delay`, `obs_time`, `n_seen`, `total`, `percent_seen` |
+
+### Methods
+
+#### `set_filters(*args) -> None`
+
+Set filters on the current data frame. Filters are applied sequentially, and each filter must match for a row to be included.
+
+**Parameters**:
+- `*args`: Filter tuples, each of the form `(column, operator, value)`
+  - Operators: `==`, `=`, `<`, `>`, `<=`, `>=`, `in`, `not in`, `notin`
+  - Values can be single values or lists (for 'in' operations)
+
+**Raises**:
+- `TypeError`: If a filter is not a tuple
+- `ValueError`: If operator is invalid or column doesn't exist
+
+**Example**:
+```python
+data.set_filters(
+    ("irf_site", "==", "north"),
+    ("irf_zenith", "<", 40),
+    ("event_id", "in", [1, 2, 3]),
+)
+```
+
+#### `set_observation_times(obs_times: np.ndarray | list[int]) -> None`
+
+Set the observation times for calculations.
+
+**Parameters**:
+- `obs_times`: Array or list of observation times in seconds
+
+#### `reset() -> None`
+
+Reset the current data frame to the full data set and clear results.
+
+#### `plot(...) -> plt.Axes | None`
+
+Generate a heatmap of detectability data.
+
+**Parameters**:
+
+| Parameter | Type | Default | Description |
+| --------- | ---- | ------- | ----------- |
+| `ax` | `plt.Axes \| None` | `None` | Matplotlib axes to plot on |
+| `output_file` | `str \| Path \| None` | `None` | Path to save the plot |
+| `annotate` | `bool` | `False` | Whether to annotate cells with values |
+| `x_tick_labels` | `np.ndarray \| list[str] \| None` | `None` | Custom labels for x-axis ticks |
+| `y_tick_labels` | `np.ndarray \| list[str] \| None` | `None` | Custom labels for y-axis ticks |
+| `min_value` | `float \| None` | `None` | Minimum value for color scale |
+| `max_value` | `float \| None` | `None` | Maximum value for color scale |
+| `color_scheme` | `str` | `"mako"` | Colormap name |
+| `color_scale` | `str \| None` | `None` | Color scale type (`"log"` for logarithmic) |
+| `as_percent` | `bool` | `False` | If True, display values as percentages (0-100) |
+| `title` | `str \| None` | `None` | Custom title string |
+| `title_callback` | `Callable[[pd.DataFrame, pd.DataFrame], str] \| None` | `None` | Callable that receives (data, results) and returns title string |
+| `n_labels` | `int` | `10` | Number of tick labels to display on axes |
+| `square` | `bool` | `True` | If True, make cells square-shaped |
+| `return_ax` | `bool` | `True` | If True, return axes object; if False, show plot |
+| `tick_fontsize` | `int` | `12` | Font size for tick labels |
+| `label_fontsize` | `int` | `16` | Font size for axis labels |
+| `max_exposure` | `float \| None` | `None` | Maximum exposure time in hours. If provided, overrides default obs_times |
+
+**Returns**: Matplotlib axes object if `return_ax=True`, otherwise `None`
+
+**Example**:
+```python
+ax = data.plot(
+    title="My Detectability Plot",
+    max_exposure=2,
+    as_percent=True,
+    color_scheme="viridis",
+)
+```
+
+### Example
+
+```python
+from sensipy.detectability import LookupData
+from sensipy.data.create_mock_lookup import create_mock_lookup_table
+
+# Create and load data
+lookup_path = create_mock_lookup_table(n_events=5)
+data = LookupData(lookup_path)
+
+# Apply filters
+data.set_filters(("irf_site", "==", "north"), ("irf_zenith", "==", 20))
+
+# Set observation times
+data.set_observation_times([10, 100, 1000, 10000])
+
+# Create plot
+ax = data.plot(title="North Site, z20", max_exposure=1)
+```
+
+---
+
+## create_heatmap_grid()
+
+Create a grid of detectability heatmaps for comparing multiple configurations.
+
+### Signature
+
+```python
+def create_heatmap_grid(
+    lookup_data_list: list[LookupData],
+    grid_size: tuple[int, int],
+    max_exposure: float | int | None = None,
+    max_value: float | None = None,
+    title: str | None = None,
+    subtitles: list[str] | None = None,
+    n_labels: int = 10,
+    tick_fontsize: int = 12,
+    label_fontsize: int = 16,
+    square: bool = False,
+    cmap: str = "mako",
+    **plot_kwargs,
+) -> tuple[plt.Figure, np.ndarray]
+```
+
+### Parameters
+
+| Parameter | Type | Description |
+| --------- | ---- | ----------- |
+| `lookup_data_list` | `list[LookupData]` | List of LookupData instances to plot |
+| `grid_size` | `tuple[int, int]` | Tuple (rows, cols) specifying grid dimensions |
+| `max_exposure` | `float \| int \| None` | Maximum exposure time in hours. If None, uses default obs_times. |
+| `max_value` | `float \| None` | Maximum value for color scale. If None, auto-determined |
+| `title` | `str \| None` | Overall title for the grid |
+| `subtitles` | `list[str] \| None` | List of titles for each subplot |
+| `n_labels` | `int` | Number of tick labels on axes |
+| `tick_fontsize` | `int` | Font size for tick labels |
+| `label_fontsize` | `int` | Font size for axis labels |
+| `square` | `bool` | Whether to make cells square-shaped |
+| `cmap` | `str` | Colormap name |
+| `**plot_kwargs` | | Additional keyword arguments passed to `plot()` method |
+
+### Returns
+
+Tuple of `(figure, axes array)`.
+
+### Example
+
+```python
+from sensipy.detectability import LookupData, create_heatmap_grid
+
+# Create multiple LookupData objects
+data1 = LookupData(lookup_path)
+data1.set_filters(("irf_site", "==", "north"), ("irf_zenith", "==", 20))
+
+data2 = LookupData(lookup_path)
+data2.set_filters(("irf_site", "==", "north"), ("irf_zenith", "==", 40))
+
+# Create grid
+fig, axes = create_heatmap_grid(
+    [data1, data2],
+    grid_size=(1, 2),
+    max_exposure=1,
+    title="Comparison",
+    subtitles=["North z20", "North z40"],
+)
+```
+
+---
+
+## convert_time()
+
+Convert a time in seconds to a human-readable string representation.
+
+### Signature
+
+```python
+def convert_time(seconds: float) -> str
+```
+
+### Parameters
+
+| Parameter | Type | Description |
+| --------- | ---- | ----------- |
+| `seconds` | `float` | Time in seconds |
+
+### Returns
+
+String representation (e.g., `"30s"`, `"2m"`, `"1h"`, `"1d"`).
+
+### Example
+
+```python
+from sensipy.detectability import convert_time
+
+print(convert_time(30))   # "30s"
+print(convert_time(3600)) # "1h"
+print(convert_time(86400)) # "1d"
+```
