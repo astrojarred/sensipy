@@ -7,72 +7,77 @@ import {Aside, Steps, Tabs, TabItem} from "@astrojs/starlight/components";
 
 ## Overview
 
-For large-scale gravitational wave (GW) followup campaigns, computing sensitivity curves and observation times individually for thousands of events can be computationally expensive. The **followup module** provides fast exposure time estimates using **pre-computed lookup tables** via interpolation.
-
-<Aside type="tip">
-  Followup calculations can be **orders of magnitude faster** than full
-  simulations, making them ideal for: - Real-time GW alert response - Large
-  parameter space studies - Quick feasibility checks
-</Aside>
+For large-scale studies with multiple different sources or where you want to explore a large parameter space of different observatory configurations or delay times, computing sensitivity curves and observation times individually can be computationally expensive. The **followup module** provides fast exposure time estimates using **pre-computed lookup tables** via interpolation.
 
 ## Pre-computed Lookup Tables
 
 A lookup table contains pre-simulated observation times for a grid of:
 
-- **GW events** (from catalogs like O5 simulations)
+- **Sources** (from catalogs or population studies)
 - **Delay times** (time from event to observation start)
 - **Observatory configurations** (site, zenith, azimuth, IRF version)
 - **EBL models**
 
-These tables are typically stored as **Parquet** or **CSV** files.
+**The followup module filters the lookup table by event, observation conditions, and any other metadata columns you provide in order to instantly interpolate the observation time needed from exposure calculations you have already performed.**
+
+These tables are can be stored in any format readable by pandas, such as **Parquet** or **CSV** files.
 
 ### Typical Lookup Table Structure
 
 ```python
 import pandas as pd
+from sensipy.util import get_data_path
 
-# Load lookup table
-df = pd.read_parquet("O5_gammapy_observations_v4.parquet")
+# Load lookup table (sample data included with sensipy)
+lookup_path = get_data_path("mock_data/sample_lookup_table.parquet")
+df = pd.read_parquet(lookup_path)
 
 print(df.columns)
-# Columns typically include:
-# - coinc_event_id: GW event identifier
-# - site: 'north' or 'south'
-# - zenith: zenith angle (degrees)
-# - delay: observation delay time
-# - obs_time: required observation time
-# - ebl: EBL model name
-# - config: telescope configuration
-# - duration: IRF duration
-# - seen: whether detection is possible
-# ... plus source metadata (long, lat, eiso, dist, etc.)
 ```
 
-<Aside type="caution">
-  Pre-computed lookup tables are **not included** with sensipy. Contact the
-  maintainers if you need access to CTA O5 observation catalogs.
-</Aside>
+### Common Columns in Lookup Tables
+
+Two columns are required: `obs_delay` and `obs_time`, which are the observation delay and the $5\sigma$ observation time for the event, respectively. The columns names do not have to match exactly.
+
+| Column          | Type    | Required | Description                                          |
+| --------------- | ------- | -------- | ---------------------------------------------------- |
+| `obs_delay`     | float   | Yes      | Observation delay time (seconds)                    |
+| `obs_time`      | float   | Yes      | $5\sigma$ observation time (seconds)                  |
+| `event_id`      | int     | Yes      | Event identifier                                  |
+| `irf_site`      | str     | No       | Observatory site: `'north'` or `'south'`            |
+| `irf_zenith`    | float   | No       | Zenith angle (degrees)                              |
+| `irf_ebl`       | bool    | No       | Boolean indicating if EBL is used                    |
+| `irf_ebl_model` | str     | No       | EBL model name (e.g., `'franceschini'`, `'dominguez11'`) |
+| `irf_config`    | str     | No       | Telescope configuration                              |
+| `irf_duration`  | int     | No       | IRF duration (seconds)                               |
+| `long`          | float   | No       | Source longitude (radians)                           |
+| `lat`           | float   | No       | Source latitude (radians)                            |
+| `dist`          | float   | No       | Source distance (kpc)                               |
+
 
 ## The `get_exposure` Function
 
-The main function for followup calculations is `sensipy.followup.get_exposure()`:
+The main function for followup calculations is `sensipy.followup.get_exposure()`.
 
 ```python
 from sensipy import followup
+from sensipy.util import get_data_path
 import astropy.units as u
 import pandas as pd
 
-# Load lookup table (pre-computed observations)
-lookup_df = pd.read_parquet("./O5_gammapy_observations_v4.parquet")
+# Load lookup table (sample data included with sensipy)
+lookup_path = get_data_path("mock_data/sample_lookup_table.parquet")
+lookup_df = pd.read_parquet(lookup_path)
 
 # Get exposure for a specific event
+# Use filters as keyword arguments to specify event and observation configuration
 result = followup.get_exposure(
-    event_id=1,
     delay=10 * u.s,
-    site="north",
-    zenith=60,
-    extrapolation_df=lookup_df,
-    ebl="franceschini",
+    lookup_df=lookup_df,
+    event_id=1,
+    irf_site="north",
+    irf_zenith=60,
+    irf_ebl_model="franceschini",
 )
 
 print(result)
@@ -82,15 +87,17 @@ print(result)
 
 | Parameter          | Type                    | Description                                             |
 | ------------------ | ----------------------- | ------------------------------------------------------- |
-| `event_id`         | `int`                   | GW event identifier                                     |
 | `delay`            | `u.Quantity`            | Observation delay from event onset                      |
-| `site`             | `str`                   | Observatory site (`"north"` or `"south"`)               |
-| `zenith`           | `int`                   | Zenith angle (degrees, typically 20, 40, 60)            |
-| `extrapolation_df` | `pd.DataFrame` or `str` | Lookup table (DataFrame or filepath)                    |
-| `ebl`              | `str` or `bool`         | EBL model name, or `True`/`False`                       |
-| `config`           | `str`                   | Telescope configuration (default: `"alpha"`)            |
-| `duration`         | `int`                   | IRF duration in seconds (default: `1800`)               |
-| `event_id_column`  | `str`                   | Column name for event IDs (default: `"coinc_event_id"`) |
+| `lookup_df`        | `pd.DataFrame` or `str` | Lookup table (DataFrame or filepath). If provided, uses lookup mode |
+| `source_filepath`  | `Path` or `str`         | Path to source file. Required if lookup_df is None. Sensitivity will be re-calculated from scratch. |
+| `other_info`       | `list[str]`             | List of column names to include in the returned dictionary when using lookup mode. These are extracted from the lookup dataframe. |
+| `delay_column`     | `str`                   | Name of the column containing observation delays (default: `"obs_delay"`) |
+| `obs_time_column`  | `str`                   | Name of the column containing observation times (default: `"obs_time"`) |
+| `**filters`        | `str \| float \| int \| bool` | Column-value pairs to filter dataframes. Common filters include: |
+|                    |                         | - `event_id`: Event identifier |
+|                    |                         | - `irf_site`: Observatory site (eg `"ctao-north"`) |
+|                    |                         | - `irf_zenith`: Zenith angle in degrees |
+|                    |                         | - `irf_ebl_model`: EBL model name (e.g., "franceschini", "dominguez11") |
 
 ### Return Value
 
@@ -106,12 +113,10 @@ Returns a dictionary similar to `Source.observe()`:
     'min_energy': <Quantity>,    # Energy range
     'max_energy': <Quantity>,
 
-    # Source metadata from lookup table
+    # Any metadata columns from lookup table you request via `other_info`, for example;
     'long': <Quantity>,
     'lat': <Quantity>,
-    'eiso': <Quantity>,
     'dist': <Quantity>,
-    'angle': <Quantity>,
     'id': int,
 
     'error_message': str,        # If any issues
@@ -124,14 +129,7 @@ The `get_exposure` function uses **logarithmic interpolation** to estimate obser
 
 <Steps>
 
-1. **Filter lookup table** for matching:
-
-   - Event ID
-   - Site
-   - Zenith angle
-   - EBL model
-   - Configuration
-   - Duration
+1. **Filter lookup table** using the filters on your lookup table columns (e.g., `event_id`, `irf_site`, `irf_ebl_model`).
 
 2. **Extract delay-observation time pairs** from filtered rows
 
@@ -161,28 +159,30 @@ The `get_exposure` function uses **logarithmic interpolation** to estimate obser
   <TabItem label="Simple Query">
     ```python
     from sensipy import followup
+    from sensipy.util import get_data_path
     import astropy.units as u
     import pandas as pd
 
     # Load lookup table once (cache for multiple queries)
-    lookup_df = pd.read_parquet("./O5_gammapy_observations_v4.parquet")
+    lookup_path = get_data_path("mock_data/sample_lookup_table.parquet")
+    lookup_df = pd.read_parquet(lookup_path)
 
     # Query a single event
     result = followup.get_exposure(
-        event_id=42,
         delay=30 * u.min,
-        site="south",
-        zenith=20,
-        extrapolation_df=lookup_df,
-        ebl="franceschini",
+        lookup_df=lookup_df,
+        event_id=1,
+        irf_site="south",
+        irf_zenith=20,
+        irf_ebl_model="franceschini",
     )
 
     if result['seen']:
-        print(f"Event 42 detectable in {result['obs_time']}")
+        print(f"Event 1 detectable in {result['obs_time']}")
         print(f"  Start: {result['start_time']}")
         print(f"  End: {result['end_time']}")
     else:
-        print(f"Event 42 not detectable")
+        print(f"Event 1 not detectable")
     ```
 
   </TabItem>
@@ -190,24 +190,27 @@ The `get_exposure` function uses **logarithmic interpolation** to estimate obser
   <TabItem label="Multiple Events">
     ```python
     from sensipy import followup
+    from sensipy.util import get_data_path
     import astropy.units as u
+    import numpy as np
     import pandas as pd
 
-    lookup_df = pd.read_parquet("./O5_gammapy_observations_v4.parquet")
+    lookup_path = get_data_path("mock_data/sample_lookup_table.parquet")
+    lookup_df = pd.read_parquet(lookup_path)
 
     # Query multiple events
-    event_ids = [1, 5, 10, 42, 100]
+    event_ids = [1, 2, 3, 4, 5]
     delay = 10 * u.s
     results = []
 
     for event_id in event_ids:
         result = followup.get_exposure(
-            event_id=event_id,
             delay=delay,
-            site="north",
-            zenith=40,
-            extrapolation_df=lookup_df,
-            ebl="franceschini",
+            lookup_df=lookup_df,
+            event_id=event_id,
+            irf_site="north",
+            irf_zenith=40,
+            irf_ebl_model="franceschini",
         )
         results.append(result)
 
@@ -225,26 +228,28 @@ The `get_exposure` function uses **logarithmic interpolation** to estimate obser
   <TabItem label="Delay Scan">
     ```python
     from sensipy import followup
+    from sensipy.util import get_data_path
     import astropy.units as u
     import numpy as np
     import pandas as pd
     import matplotlib.pyplot as plt
 
-    lookup_df = pd.read_parquet("./O5_gammapy_observations_v4.parquet")
+    lookup_path = get_data_path("mock_data/sample_lookup_table.parquet")
+    lookup_df = pd.read_parquet(lookup_path)
 
     # Scan over delays for one event
-    event_id = 10
-    delays = np.logspace(0, 4, 30) * u.s  # 1s to 10,000s
+    event_id = 4
+    delays = np.logspace(1, 4, 30) * u.s  # 1s to 10,000s
     obs_times = []
 
     for delay in delays:
         result = followup.get_exposure(
-            event_id=event_id,
             delay=delay,
-            site="south",
-            zenith=20,
-            extrapolation_df=lookup_df,
-            ebl="franceschini",
+            lookup_df=lookup_df,
+            event_id=event_id,
+            irf_site="south",
+            irf_zenith=20,
+            irf_ebl_model="franceschini",
         )
 
         if result['seen']:
@@ -271,14 +276,16 @@ Use followup calculations to explore how detectability varies across parameter s
 
 ```python
 from sensipy import followup
+from sensipy.util import get_data_path
 import astropy.units as u
 import pandas as pd
 import numpy as np
 
-lookup_df = pd.read_parquet("./O5_gammapy_observations_v4.parquet")
+lookup_path = get_data_path("mock_data/sample_lookup_table.parquet")
+lookup_df = pd.read_parquet(lookup_path)
 
 # Get all unique event IDs
-event_ids = lookup_df['coinc_event_id'].unique()[:100]  # First 100 events
+event_ids = lookup_df['event_id'].unique()[:100]  # First 100 events
 
 # Fixed observing parameters
 delay = 60 * u.s
@@ -292,12 +299,12 @@ for i, site in enumerate(sites):
         detections = 0
         for event_id in event_ids:
             result = followup.get_exposure(
-                event_id=event_id,
                 delay=delay,
-                site=site,
-                zenith=zenith,
-                extrapolation_df=lookup_df,
-                ebl="franceschini",
+                lookup_df=lookup_df,
+                event_id=event_id,
+                irf_site=site,
+                irf_zenith=zenith,
+                irf_ebl_model="franceschini",
             )
             if result['seen']:
                 detections += 1
@@ -315,26 +322,36 @@ for i, site in enumerate(sites):
 
 ### `get_row`: Retrieve Lookup Table Entries
 
-Directly retrieve rows from the lookup table:
+Directly retrieve rows from the lookup table using keyword arguments to filter on any columns:
 
 ```python
 from sensipy.followup import get_row
+from sensipy.util import get_data_path
 import pandas as pd
 
-lookup_df = pd.read_parquet("./O5_gammapy_observations_v4.parquet")
+lookup_path = get_data_path("mock_data/sample_lookup_table.parquet")
+lookup_df = pd.read_parquet(lookup_path)
 
 # Get specific configuration for an event
+# Use column names as keyword arguments
 row = get_row(
-    sens_df=lookup_df,
-    event_id=42,
-    site="south",
-    zenith=20,
-    ebl=True,  # Use EBL (any model)
-    config="alpha",
-    duration=1800,
+    lookup_df=lookup_df,
+    event_id=1,
+    irf_site="south",
+    irf_zenith=20,
+    irf_ebl_model="franceschini",  # EBL model name
+    irf_config="alpha",
+    irf_duration=1800,
 )
 
 print(row)
+
+# You can filter on any columns in your dataframe
+row = get_row(
+    lookup_df=lookup_df,
+    event_id=1,
+    irf_zenith=20,  # Any column name works
+)
 ```
 
 ### `extrapolate_obs_time`: Low-level Interpolation
@@ -343,15 +360,24 @@ Perform interpolation directly (rarely needed by users):
 
 ```python
 from sensipy.followup import extrapolate_obs_time
+from sensipy.util import get_data_path
 import astropy.units as u
+import pandas as pd
+
+lookup_path = get_data_path("mock_data/sample_lookup_table.parquet")
+lookup_df = pd.read_parquet(lookup_path)
 
 # Manually perform interpolation
 result = extrapolate_obs_time(
-    event_id=42,
     delay=100 * u.s,
-    extrapolation_df=lookup_df,
-    filters={'site': 'south', 'zenith': 20, 'ebl': 'franceschini'},
-    other_info=['long', 'lat', 'eiso'],  # Additional fields to include
+    lookup_df=lookup_df,
+    filters={
+        'event_id': 1, 
+        'irf_site': 'south',     
+        'irf_zenith': 20, 
+        'irf_ebl_model': 'franceschini',
+    },
+    other_info=['long', 'lat', 'dist'],  # Additional fields to include
 )
 ```
 
@@ -361,21 +387,23 @@ If you have pre-computed sensitivity curves in your lookup table, you can create
 
 ```python
 from sensipy.followup import get_sensitivity
-from sensipy.sensitivity import SensitivityGammapy
+from sensipy.util import get_data_path
+from sensipy.sensitivity import Sensitivity
 import astropy.units as u
+import pandas as pd
 
-# Create sensitivity from lookup table curves
+lookup_path = get_data_path("mock_data/sample_lookup_table.parquet")
+lookup_df = pd.read_parquet(lookup_path)
+
+# Note: get_sensitivity requires sensitivity_curve and photon_flux_curve columns
+# The sample lookup table is designed for get_exposure, which uses obs_delay/obs_time
+# For get_sensitivity examples, you would need a different lookup table structure
+
+# Or provide curves directly
 sens = get_sensitivity(
-    event_id=42,
-    sens_df=lookup_df,
-    site="south",
-    zenith=20,
-    ebl="franceschini",
-    config="alpha",
-    duration=1800,
-    radius=3.0 * u.deg,
-    min_energy=0.02 * u.TeV,
-    max_energy=10 * u.TeV,
+    sensitivity_curve=[1e-10, 1e-11, 1e-12],
+    photon_flux_curve=[1e-9, 1e-10, 1e-11],
+    observatory="ctao_south",
 )
 
 # Now use this sensitivity for custom calculations
@@ -402,20 +430,22 @@ Followup calculations are designed for speed:
 ### Caching Lookup Tables
 
 ```python
+from sensipy.util import get_data_path
 import pandas as pd
 
 # Load once at the start of your script/notebook
-LOOKUP_TABLE = pd.read_parquet("./O5_gammapy_observations_v4.parquet")
+lookup_path = get_data_path("mock_data/sample_lookup_table.parquet")
+LOOKUP_TABLE = pd.read_parquet(lookup_path)
 
 # Reuse for all queries
 def quick_query(event_id, delay):
     return followup.get_exposure(
-        event_id=event_id,
         delay=delay,
-        site="south",
-        zenith=20,
-        extrapolation_df=LOOKUP_TABLE,  # Reuse cached table
-        ebl="franceschini",
+        lookup_df=LOOKUP_TABLE,  # Reuse cached table
+        event_id=event_id,
+        irf_site="south",
+        irf_zenith=20,
+        irf_ebl_model="franceschini",
     )
 ```
 
@@ -441,14 +471,14 @@ To create a lookup table for your own catalog:
 
 ```python
 from sensipy.ctaoirf import IRFHouse
-from sensipy.sensitivity import SensitivityGammapy
+from sensipy.sensitivity import Sensitivity
 from sensipy.source import Source
 import astropy.units as u
 import pandas as pd
 from pathlib import Path
 
 # Load IRFs
-house = IRFHouse(base_directory="./CTA-IRFs")
+house = IRFHouse(base_directory="./IRFs/CTAO")
 
 # Configuration grid
 sites = ["north", "south"]
@@ -484,14 +514,14 @@ for event_file in event_files:
                 )
 
                 # Calculate sensitivity
-                sens = SensitivityGammapy(
+                sens = Sensitivity(
                     irf=irf,
                     observatory=f"ctao_{site}",
                     min_energy=20 * u.GeV,
                     max_energy=10 * u.TeV,
                     radius=3.0 * u.deg,
                 )
-                sens.get_sensitivity_curve(grb=source)
+                sens.get_sensitivity_curve(source=source)
 
                 # Simulate at each delay
                 for delay in delays:
@@ -514,41 +544,3 @@ for event_file in event_files:
 df = pd.DataFrame(results)
 df.to_parquet("my_lookup_table.parquet")
 ```
-
-## Troubleshooting
-
-### Common Issues
-
-**Problem**: "No matching rows found in lookup table"
-
-**Solution**:
-
-- Verify the event ID exists in the table
-- Check that site/zenith/EBL combination exists
-- Use `get_row()` to debug what's available
-
----
-
-**Problem**: Interpolation returns unrealistic values
-
-**Solution**:
-
-- Check that the lookup table has sufficient delay points for interpolation
-- Verify the delay range covers your query point
-- The table may not have data for this event—try a different one
-
----
-
-**Problem**: Very slow performance
-
-**Solution**:
-
-- Load the DataFrame once and cache it (don't reload from file repeatedly)
-- Use Parquet instead of CSV
-- Pre-filter the DataFrame to reduce size
-
-## Next Steps
-
-- See the [Tutorials](/tutorials/) for complete workflow examples
-- Check the [Followup API reference](/reference/followup) for detailed documentation
-- Learn about [Sensitivity Calculations](./sensitivity) to understand the underlying methods

@@ -27,7 +27,7 @@ IRFHouse(base_directory: str | Path, check_irfs: bool = False)
 ```python
 from sensipy.ctaoirf import IRFHouse
 
-house = IRFHouse(base_directory="./CTA-IRFs")
+house = IRFHouse(base_directory="./IRFs/CTAO")
 ```
 
 ### Methods
@@ -44,8 +44,6 @@ get_irf(
     duration: Duration | int,
     azimuth: Azimuth | str,
     version: Version | str,
-    modified: bool = False,
-    nsb: bool = False,
 ) -> IRF
 ```
 
@@ -58,9 +56,7 @@ get_irf(
 | `zenith`        | `int`  | `20`, `40`, `60` (degrees)                    |
 | `duration`      | `int`  | `1800`, `18000`, `180000` (seconds)           |
 | `azimuth`       | `str`  | `"north"`, `"south"`, `"average"`             |
-| `version`       | `str`  | `"prod5-v0.1"`, `"prod5-v0.2"`, `"prod3b-v2"` |
-| `modified`      | `bool` | Use modified IRFs (v0.2 only)                 |
-| `nsb`           | `bool` | Include NSB effects (v0.2 only)               |
+| `version`       | `str`  | `"prod5-v0.1"`, `"prod3b-v2"` |
 
 **Returns:** `IRF` object
 
@@ -198,7 +194,6 @@ class Azimuth(str, Enum):
 ```python
 class Version(str, Enum):
     prod5_v0p1 = "prod5-v0.1"
-    prod5_v0p2 = "prod5-v0.2"
     prod3b_v2 = "prod3b-v2"
 ```
 
@@ -207,7 +202,7 @@ class Version(str, Enum):
 ```python
 from sensipy.ctaoirf import IRFHouse, Site, Zenith, Configuration
 
-house = IRFHouse(base_directory="./CTA-IRFs")
+house = IRFHouse(base_directory="./IRFs/CTAO")
 
 irf = house.get_irf(
     site=Site.south,
@@ -218,9 +213,3 @@ irf = house.get_irf(
     version="prod5-v0.1",
 )
 ```
-
-## Related
-
-- [Setup Guide](/getting_started/setup) - IRF installation and configuration
-- [Loading IRFs Tutorial](/tutorials/loading_irfs) - Detailed tutorial
-- [Sensitivity API](/reference/sensitivity) - Using IRFs for sensitivity calculations

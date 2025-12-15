@@ -153,6 +153,9 @@ class IRF(BaseModel):
 
         return "\n".join([title, filepath, config, site, zenith, duration, azimuth])
 
+    def __str__(self) -> str:
+        return self.__repr__()
+
     def __fspath__(self):
         return str(self.filepath)
 
@@ -240,11 +243,30 @@ class IRFHouse(BaseModel):
         else:
             raise ValueError(f"Invalid site {site}")
 
+        # Files can be in two locations:
+        # 1. In subdirectories (test fixtures): CTA-Performance-prod5-v0.1-South-20deg.FITS/
+        # 2. Directly in fits/ (download script): fits/
+        # Try subdirectory first, then fall back to direct path
+        subdirectory = f"CTA-Performance-prod5-v0.1-{site_string}-{subarray_string}{zenith}deg.FITS"
+        filename = f"Prod5-{site_string}-{zenith}deg-{azimuth_string}-{telescope_string}.{duration}s-v0.1.fits.gz"
+        
+        # Try subdirectory path first (for test fixtures)
+        subdir_path = self.base_directory / f"prod5-v0.1/fits/{subdirectory}/{filename}"
+        # Try direct path (for download script)
+        direct_path = self.base_directory / f"prod5-v0.1/fits/{filename}"
+        
+        # Use whichever path exists, or default to subdirectory path (will raise error if neither exists)
+        if subdir_path.exists():
+            filepath = Path(f"prod5-v0.1/fits/{subdirectory}/{filename}")
+        elif direct_path.exists():
+            filepath = Path(f"prod5-v0.1/fits/{filename}")
+        else:
+            # Default to subdirectory path - validation will raise appropriate error
+            filepath = Path(f"prod5-v0.1/fits/{subdirectory}/{filename}")
+        
         return IRF(
             base_directory=self.base_directory,
-            filepath=Path(
-                f"prod5-v0.1/fits/CTA-Performance-prod5-v0.1-{site_string}{subarray_string}-{zenith}deg.FITS/Prod5-{site_string}-{zenith}deg-{azimuth_string}-{telescope_string}.{duration}s-v0.1.fits.gz"
-            ),
+            filepath=filepath,
             configuration=configuration,
             site=site,
             zenith=zenith,
@@ -422,16 +444,25 @@ class IRFHouse(BaseModel):
         else:
             raise ValueError(f"Invalid version {version}")
 
-    def check_all_paths(self):
-        missing_irf_count = 0
+    def check_all_paths(self) -> bool:
+        """
+        Check all IRF paths and report which are found/missing.
 
+        Returns:
+            True if all IRFs were found, False otherwise
+        """
         sites = ["north", "south"]
         configurations = ["alpha", "omega"]
         zeniths = [20, 40, 60]
         durations = [1800, 18000, 180000]
         azimuths = ["north", "south", "average"]
-        versions = ["prod5-v0.1", "prod5-v0.2", "prod3b-v2"]
+        versions = ["prod5-v0.1", "prod3b-v2"]
         modifieds = [False, True]
+
+        # Track results per version
+        version_results: dict[str, dict[str, int]] = {
+            v: {"found": 0, "missing": 0} for v in versions
+        }
 
         for (
             site,
@@ -460,17 +491,31 @@ class IRFHouse(BaseModel):
                     version=version,
                     modified=modified,
                 )
+                version_results[version]["found"] += 1
             except ValueError as e:
-                log.debug(e)
+                log.debug(str(e))
                 log.debug(
                     f"Failed to find IRF for site={site}, configuration={configuration}, zenith={zenith}, duration={duration}, azimuth={azimuth}, version={version}"
                 )
-                missing_irf_count += 1
+                version_results[version]["missing"] += 1
 
-        if missing_irf_count > 0:
-            log.info(f"✅ Found {len(sites) * len(configurations) * len(zeniths) * len(durations) * len(azimuths) * len(versions) * len(modifieds) - missing_irf_count} IRFs")
-            log.warning(
-                f"⚠️ Missing {missing_irf_count} IRF{'' if missing_irf_count == 1 else 's'}"
-            )
-        else:
-            log.info("✅ All IRFs found")
+        # Log results per version
+        all_found = True
+        for version, results in version_results.items():
+            found = results["found"]
+            missing = results["missing"]
+            total = found + missing
+
+            if missing == 0 and found > 0:
+                log.info(f"✅ {version}: Found all {found} IRFs")
+            elif found == 0:
+                log.debug(f"⚠️ {version}: No IRFs found (expected {total})")
+                all_found = False
+            else:
+                log.warning(f"⚠️ {version}: Found {found}/{total} IRFs ({missing} missing)")
+                all_found = False
+
+        if all_found:
+            log.info("✅ All IRF versions verified successfully")
+
+        return all_found

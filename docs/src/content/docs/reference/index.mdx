@@ -52,7 +52,7 @@ sensipy/
 | Class                | Module                | Purpose                                    |
 | -------------------- | --------------------- | ------------------------------------------ |
 | `Source`             | `sensipy.source`      | Load and manipulate time-resolved spectra  |
-| `SensitivityGammapy` | `sensipy.sensitivity` | Calculate sensitivity curves using Gammapy |
+| `Sensitivity` | `sensipy.sensitivity` | Calculate sensitivity curves using Gammapy |
 | `IRFHouse`           | `sensipy.ctaoirf`     | Manage and load IRF files                  |
 | `IRF`                | `sensipy.ctaoirf`     | Represent single IRF configuration         |
 
@@ -89,7 +89,7 @@ zenith: int =20  # degrees (plain int)
 ```python
 # Main classes
 from sensipy.source import Source
-from sensipy.sensitivity import SensitivityGammapy
+from sensipy.sensitivity import Sensitivity
 from sensipy.ctaoirf import IRFHouse, IRF
 
 # Followup functions

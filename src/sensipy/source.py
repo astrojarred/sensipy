@@ -10,7 +10,7 @@ import os
 import re
 import warnings
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 import astropy.units as u
 import matplotlib.pyplot as plt
@@ -29,6 +29,7 @@ from scipy.interpolate import RegularGridInterpolator, interp1d
 
 from .logging import logger
 from .sensitivity import ScaledTemplateModel, Sensitivity
+from .util import get_data_path
 
 log = logger(__name__)
 
@@ -92,22 +93,14 @@ class Source:
         self.start_time = -1 * u.s
         self.end_time = -1 * u.s
         self.error_message: str | None = None
-        self.dist = None
         self.file_type: Literal["fits", "txt", "csv", None] = None
-        self.id = 0
 
         self.input_times: list[u.Quantity] | None = None
         if times is not None:
             self.input_times = times
 
-        # initialize metadata
-        self.eiso = None
-        self.fluence = None
-        self.dist = None
-        self.angle = None
-        self.long = None
-        self.lat = None
-        self.fluence = None
+        # initialize empty metadata dictionary (user-defined)
+        self._metadata: dict[str, Any] = {}
 
         # choose reader based on file extension or directory contents
         if self.filepath.is_dir():
@@ -161,34 +154,96 @@ class Source:
         self.fit_spectral_indices()
 
         # set EBL model (and optionally update distance via redshift)
-        if self.dist is not None and not self.dist == 0:
+        # Check if distance metadata exists (user-defined key)
+        distance = self._metadata.get("distance")
+        self.ebl_model: str | None = None
+        if distance is not None and not distance == 0:
             self.set_ebl_model(ebl)
         else:
             self.ebl = None
             self.ebl_model = None
 
-        log.debug(f"Loaded event {self.id}º")
+        event_id = self._metadata.get("id") or self._metadata.get("event_id") or "unknown"
+        log.debug(f"Loaded event {event_id}º")
 
     def __repr__(self):
         """Return a string representation of the Source instance."""
-        return f"<Source(id={self.id})>"
+        event_id = self._metadata.get("id") or self._metadata.get("event_id") or "unknown"
+        return f"<Source(id={event_id})>"
+
+    def __getattr__(self, name: str):
+        """Allow attribute access to any key in the metadata dictionary.
+        
+        Any attribute name that exists as a key in _metadata can be accessed
+        via attribute notation (e.g., source.my_custom_key).
+        """
+        # Use object.__getattribute__ to avoid infinite recursion
+        try:
+            metadata = object.__getattribute__(self, "_metadata")
+        except AttributeError:
+            raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+        
+        # Check if the attribute name exists as a key in metadata
+        if name in metadata:
+            return metadata[name]
+        
+        raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+
+    def __setattr__(self, name: str, value):
+        """Store non-class attributes in the metadata dictionary.
+        
+        Any attribute that is not a regular class attribute (like time, energy, etc.)
+        will be stored in the _metadata dictionary and can be accessed via attribute notation.
+        """
+        # List of regular class attributes that should NOT go into metadata
+        # These are set during initialization and are actual class attributes
+        regular_attrs = {
+            "_metadata", "filepath", "min_energy", "max_energy", "seen", "obs_time",
+            "start_time", "end_time", "error_message", "file_type", "input_times",
+            "time", "energy", "spectra", "SpectralGrid", "ebl", "ebl_model",
+            "_indices", "_amplitudes", "_index_times", "_bad_index_times",
+            "index_at", "amplitude_at"
+        }
+        
+        # If setting _metadata itself, use normal attribute setting
+        if name == "_metadata":
+            super().__setattr__(name, value)
+            return
+        
+        # If this is a regular class attribute, use normal setting
+        if name in regular_attrs:
+            super().__setattr__(name, value)
+            return
+        
+        # Check if this attribute already exists as a regular attribute
+        # Use object.__getattribute__ to avoid triggering __getattr__
+        try:
+            object.__getattribute__(self, name)
+            # Attribute exists, update it normally
+            super().__setattr__(name, value)
+            return
+        except AttributeError:
+            # Attribute doesn't exist, check if we're in initialization
+            # If _metadata doesn't exist yet, we're in __init__, so store normally
+            try:
+                object.__getattribute__(self, "_metadata")
+            except AttributeError:
+                # We're in __init__ before _metadata is set, store normally
+                super().__setattr__(name, value)
+                return
+            
+            # _metadata exists, so store in metadata dictionary
+            metadata = object.__getattribute__(self, "_metadata")
+            metadata[name] = value
 
     @property
     def metadata(self) -> dict:
         """Return a dictionary of the source metadata.
 
         Returns:
-            dict: A dictionary of the source metadata which includes the event id, longitude, latitude, eiso, distance, and jet opening angle.
+            dict: A copy of the user-defined metadata dictionary.
         """
-        return {
-            "id": self.id,
-            "longitude": self.long,
-            "latitude": self.lat,
-            "eiso": self.eiso,
-            "distance": self.dist,
-            "angle": self.angle,
-            "fluence": self.fluence,
-        }
+        return self._metadata.copy()
 
     def read_fits(self) -> None:
         """Read spectral data and metadata from a FITS file.
@@ -206,33 +261,101 @@ class Source:
             - Metadata attributes (long, lat, eiso, dist, angle, fluence) if present
         """
         with fits.open(self.filepath) as hdu_list:
-            # Try/catch each header field; set to default if missing
-            try:
-                self.long = hdu_list[0].header["LONG"] * u.Unit("rad")
-            except KeyError:
-                log.info("Longitude (LONG) not found in FITS header")
-            try:
-                self.lat = hdu_list[0].header["LAT"] * u.Unit("rad")
-            except KeyError:
-                log.info("Latitude (LAT) not found in FITS header")
-            try:
-                self.eiso = hdu_list[0].header["EISO"] * u.Unit("erg")
-            except KeyError:
-                log.info(
-                    "Isotropic equivalent energy of prompt emission (EISO) not found in FITS header"
-                )
-            try:
-                self.dist = Distance(hdu_list[0].header["DISTANCE"], unit="kpc")
-            except KeyError:
-                log.info("Distance (DISTANCE) not found in FITS header")
-            try:
-                self.angle = hdu_list[0].header["ANGLE"] * u.Unit("deg")
-            except KeyError:
-                log.info("Viewing angle (ANGLE) not found in FITS header")
-            try:
-                self.fluence = hdu_list[0].header["FLUENCE"] * u.Unit("1 / cm2")
-            except KeyError:
-                log.info("Fluence (FLUENCE) not found in FITS header")
+            # Read header fields and add to metadata (user-defined keys)
+            # FITS header format: header["KEY"] = (value, "slug [unit]")
+            # Example: header["LAT"] = (1.0, "latitude [rad]") -> metadata["latitude"] = 1.0 * u.Unit("rad")
+            
+            # Standard FITS keywords to skip
+            standard_fits_keys = {
+                "SIMPLE", "BITPIX", "NAXIS", "NAXIS1", "NAXIS2", "NAXIS3", "NAXIS4",
+                "EXTEND", "BSCALE", "BZERO", "BLANK", "BUNIT", "DATAMAX", "DATAMIN",
+                "DATE", "DATE-OBS", "DATE-BEG", "DATE-END", "MJD", "MJD-OBS",
+                "ORIGIN", "TELESCOP", "INSTRUME", "OBSERVER", "OBJECT", "OBSID",
+                "EQUINOX", "RADECSYS", "CTYPE1", "CTYPE2", "CRVAL1", "CRVAL2",
+                "CRPIX1", "CRPIX2", "CDELT1", "CDELT2", "CUNIT1", "CUNIT2",
+            }
+            
+            header = hdu_list[0].header
+            
+            for header_key in header.keys():
+                # Skip standard FITS keywords and comment/history cards
+                if (header_key in standard_fits_keys or 
+                    header_key.startswith("COMMENT") or 
+                    header_key.startswith("HISTORY") or
+                    header_key.startswith("TTYPE") or
+                    header_key.startswith("TFORM") or
+                    header_key.startswith("TUNIT") or
+                    header_key.startswith("TSCAL") or
+                    header_key.startswith("TZERO") or
+                    header_key.startswith("TNULL") or
+                    header_key.startswith("TDISP")):
+                    continue
+                
+                try:
+                    # Get value and comment from FITS header
+                    # Format: header["KEY"] = (value, "slug [unit]")
+                    # When reading: header["KEY"] gives value, header.comments["KEY"] gives comment
+                    value = header[header_key]
+                    try:
+                        comment = header.comments[header_key].strip()
+                    except (KeyError, AttributeError):
+                        comment = ""
+                    
+                    # Skip if value is empty string
+                    if value == "" or (isinstance(value, str) and value.strip() == ""):
+                        continue
+                    
+                    if comment:
+                        # Parse comment to extract slug and unit
+                        # Format: "slug [unit]" or just "slug"
+                        # Try to extract unit from brackets: "slug [unit]"
+                        unit_match = re.search(r'\[([^\]]+)\]', comment)
+                        if unit_match:
+                            unit_str = unit_match.group(1).strip()
+                            # Extract slug (everything before the bracket)
+                            slug_match = re.match(r'^(.+?)\s*\[', comment)
+                            slug = slug_match.group(1).strip().lower() if slug_match else comment.split('[')[0].strip().lower()
+                        else:
+                            # No unit specified, use the comment as slug
+                            slug = comment.lower()
+                            unit_str = None
+                        
+                        # Convert slug to a valid Python identifier (replace spaces/special chars with underscores)
+                        slug = re.sub(r'[^\w]+', '_', slug).strip('_')
+                        
+                        if not slug:  # Skip if slug is empty
+                            continue
+                    else:
+                        # No comment, use header key name as slug (lowercase)
+                        slug = header_key.lower()
+                        unit_str = None
+                    
+                    # Convert value to appropriate type
+                    if unit_str:
+                        # Special handling for distance
+                        if slug == "distance" or slug == "dist":
+                            try:
+                                parsed_value = Distance(float(value), unit=unit_str)
+                            except Exception:
+                                parsed_value = float(value) * u.Unit(unit_str)
+                        else:
+                            parsed_value = float(value) * u.Unit(unit_str)
+                    else:
+                        # No unit, try to determine type
+                        try:
+                            parsed_value = int(float(value))
+                        except (ValueError, TypeError):
+                            try:
+                                parsed_value = float(value)
+                            except (ValueError, TypeError):
+                                parsed_value = str(value)
+                    
+                    self._metadata[slug] = parsed_value
+                    log.debug(f"Loaded metadata '{slug}' = {parsed_value} from FITS header '{header_key}'")
+                
+                except Exception as e:
+                    log.debug(f"Could not parse header key '{header_key}': {e}")
+                    continue
 
             datalc = hdu_list[3].data
             datatime = hdu_list[2].data
@@ -287,6 +410,7 @@ class Source:
         candidates.sort(key=extract_index)
 
         spectra_columns = []  # list of flux arrays per time
+        time_indices = []  # list of time indices from file names
 
         for p in candidates:
             arr = np.loadtxt(p)
@@ -294,6 +418,7 @@ class Source:
             dNdE = arr[:, 1] * u.Unit("1 / (cm2 s GeV)")
 
             spectra_columns.append(dNdE)
+            time_indices.append(extract_index(p))
 
         # set energy grid
         self.energy = energy
@@ -301,6 +426,10 @@ class Source:
         # build spectra with shape (n_energy, n_time)
         spectra_stack = u.Quantity(spectra_columns)  # (n_time, n_energy)
         self.spectra = spectra_stack.T  # (n_energy, n_time)
+
+        # set time grid from file indices (convert to seconds)
+        # Use the indices as time values in seconds
+        self.time = np.array(time_indices) * u.s
 
         if not isinstance(self.min_energy, u.Quantity):
             self.min_energy = self.energy.min()
@@ -464,10 +593,11 @@ class Source:
                         value = row.value
 
                         # Handle Units column - convert to string, handle NaN/empty
+                        unit_val = None
                         if "units" in metadata_df.columns:
                             unit_val = row.units
 
-                        if pd.notna(unit_val):
+                        if unit_val is not None and pd.notna(unit_val):
                             unit_str = str(unit_val).strip()
                         else:
                             unit_str = ""
@@ -475,72 +605,65 @@ class Source:
                         if pd.notna(value) and param:
                             metadata_dict[param] = {"value": value, "unit": unit_str}
 
-                # Parse metadata with defaults using a mapping dictionary
-                # Format: 'metadata_key': ('attribute_name', 'default_unit', 'parser_func')
-                metadata_mapping = {
-                    "id": ("id", None, lambda v, unit_str: int(float(v))),
-                    "longitude": (
-                        "long",
-                        "rad",
-                        lambda v, unit_str: float(v) * u.Unit(unit_str or "rad"),
-                    ),
-                    "latitude": (
-                        "lat",
-                        "rad",
-                        lambda v, unit_str: float(v) * u.Unit(unit_str or "rad"),
-                    ),
-                    "eiso": (
-                        "eiso",
-                        "erg",
-                        lambda v, unit_str: float(v) * u.Unit(unit_str or "erg"),
-                    ),
-                    "distance": (
-                        "dist",
-                        "kpc",
-                        lambda v, unit_str: Distance(float(v), unit=unit_str or "kpc"),
-                    ),
-                    "angle": (
-                        "angle",
-                        "deg",
-                        lambda v, unit_str: float(v) * u.Unit(unit_str or "deg"),
-                    ),
-                    "fluence": (
-                        "fluence",
-                        "1 / cm2",
-                        lambda v, unit_str: float(v) * u.Unit(unit_str or "1 / cm2"),
-                    ),
-                }
-
-                for metadata_key, (
-                    attr_name,
-                    default_unit,
-                    parser_func,
-                ) in metadata_mapping.items():
-                    if metadata_key in metadata_dict:
-                        try:
-                            value = metadata_dict[metadata_key]["value"]
-                            unit = metadata_dict[metadata_key]["unit"] or default_unit
-                            setattr(self, attr_name, parser_func(value, unit))
-                            log.debug(f"Set {attr_name} to {getattr(self, attr_name)}")
-                        except (
-                            ValueError,
-                            TypeError,
-                            u.UnitConversionError,
-                        ) as field_exc:
-                            # Convert bytes to strings for safe formatting
-                            value_str = (
-                                value.decode("utf-8")
-                                if isinstance(value, bytes)
-                                else str(value)
-                            )
-                            unit_str = (
-                                unit.decode("utf-8")
-                                if isinstance(unit, bytes)
-                                else str(unit)
-                            )
-                            log.warning(
-                                f"Could not parse metadata field '{metadata_key}' (value={value_str}, unit={unit_str}) in {metadata_path}: {type(field_exc).__name__} {field_exc}. Using default value for '{attr_name}'."
-                            )
+                # Parse metadata and store directly in _metadata dictionary
+                # User-defined keys from the CSV file
+                for param_name, param_data in metadata_dict.items():
+                    try:
+                        value = param_data["value"]
+                        # Convert unit to string and strip, handling various pandas types
+                        unit_raw = param_data.get("unit", "")
+                        unit_str = str(unit_raw).strip() if unit_raw is not None and pd.notna(unit_raw) else ""
+                        
+                        # Convert value to string first for safe parsing
+                        value_str = str(value) if pd.notna(value) else ""
+                        
+                        # Try to parse the value based on whether it has units
+                        if unit_str:
+                            # Has units - try to create Quantity or Distance
+                            if param_name.lower() == "distance":
+                                # Special handling for distance (can be Distance object)
+                                try:
+                                    parsed_value = Distance(float(value_str), unit=unit_str)
+                                except Exception:
+                                    # Fallback to Quantity if Distance fails
+                                    parsed_value = float(value_str) * u.Unit(unit_str)
+                            else:
+                                parsed_value = float(value_str) * u.Unit(unit_str)
+                        else:
+                            # No units - try to determine type
+                            try:
+                                # Try integer first
+                                parsed_value = int(float(value_str))
+                            except (ValueError, TypeError):
+                                try:
+                                    # Try float
+                                    parsed_value = float(value_str)
+                                except (ValueError, TypeError):
+                                    # Keep as string
+                                    parsed_value = value_str
+                        
+                        # Store in metadata using the parameter name as the key
+                        self._metadata[param_name] = parsed_value
+                        log.debug(f"Set metadata '{param_name}' to {parsed_value}")
+                    except (
+                        ValueError,
+                        TypeError,
+                        u.UnitConversionError,
+                    ) as field_exc:
+                        # Convert bytes to strings for safe formatting
+                        value_str = (
+                            value.decode("utf-8")
+                            if isinstance(value, bytes)
+                            else str(value)
+                        )
+                        unit_str_display = (
+                            unit_str.decode("utf-8")
+                            if isinstance(unit_str, bytes)
+                            else str(unit_str)
+                        )
+                        log.warning(
+                            f"Could not parse metadata field '{param_name}' (value={value_str}, unit={unit_str_display}) in {metadata_path}: {type(field_exc).__name__} {field_exc}. Skipping."
+                        )
             except Exception as e:
                 log.warning(
                     f"Could not parse metadata file {metadata_path}: {type(e).__name__} {e}. Using defaults."
@@ -580,8 +703,9 @@ class Source:
         # Determine current redshift if available
         current_z_val = None
         try:
-            if self.dist is not None and self.dist.z is not None:
-                current_z_val = float(self.dist.z.value)
+            dist = self._metadata.get("distance")
+            if dist is not None and dist.z is not None:
+                current_z_val = float(dist.z.value)
         except (AttributeError, TypeError, ValueError):
             current_z_val = None
 
@@ -595,24 +719,35 @@ class Source:
                         message=".*fval is not bracketed.*",
                         category=RuntimeWarning,
                     )
-                    self.dist = Distance(z=z)
+                    self._metadata["distance"] = Distance(z=z)
                 distance_changed = True
 
         # Configure EBL model
-        if ebl is not None and self.dist is not None:
+        dist = self._metadata.get("distance")
+        if ebl is not None and dist is not None:
             if ebl not in list(EBL_DATA_BUILTIN.keys()):
                 raise ValueError(
                     f"ebl must be one of {list(EBL_DATA_BUILTIN.keys())}, got {ebl}"
                 )
+            
+            # Set GAMMAPY_DATA to package data directory if not already set
             if not os.environ.get("GAMMAPY_DATA"):
-                raise ValueError(
-                    "GAMMAPY_DATA environment variable not set. "
-                    "Please set it to the path where the EBL data is stored. "
-                    "You can copy EBL data from here: https://github.com/astrojarred/sensipy/tree/main/data"
-                )
+                try:
+                    package_data_dir = get_data_path()
+                    # Convert Path to string for environment variable
+                    data_path = str(package_data_dir.resolve())
+                    os.environ["GAMMAPY_DATA"] = data_path
+                    log.debug(f"Set GAMMAPY_DATA to package data directory: {data_path}")
+                except Exception as e:
+                    raise ValueError(
+                        "GAMMAPY_DATA environment variable not set and could not "
+                        f"use package data directory: {e}. "
+                        "Please set GAMMAPY_DATA to the path where the EBL data is stored, "
+                        "or ensure the sensipy package data is properly installed."
+                    )
 
             self.ebl = EBLAbsorptionNormSpectralModel.read_builtin(
-                ebl, redshift=self.dist.z.value
+                ebl, redshift=dist.z.value
             )
             self.ebl_model = ebl
         else:
@@ -694,7 +829,7 @@ class Source:
             cmap="viridis",
             aspect="auto",
         )
-        plt.colorbar(label="Log spectrum [ph / (cm2 s GeV)]")
+        plt.colorbar(label="Log dN/dE [cm-2 s-1 GeV-1]")
 
         if return_plot:
             return plt

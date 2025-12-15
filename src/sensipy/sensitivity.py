@@ -39,6 +39,8 @@ from gammapy.stats import WStatCountsStatistic
 from gammapy.utils.roots import find_roots
 from regions import CircleSkyRegion
 
+from .util import get_data_path
+
 from .logging import logger
 
 # Set up logging
@@ -247,13 +249,20 @@ class Sensitivity:
                 raise ValueError(
                     f"ebl must be one of {list(EBL_DATA_BUILTIN.keys())}, got {ebl}"
                 )
-            # check that environment variable is set
+            # Set GAMMAPY_DATA to package data directory if not already set
             if not os.environ.get("GAMMAPY_DATA"):
-                raise ValueError(
-                    "GAMMAPY_DATA environment variable not set. "
-                    "Please set it to the path where the EBL data is stored. "
-                    "You can copy EBL data from here: https://github.com/astrojarred/sensipy/tree/main/data"
-                )
+                try:
+                    package_data_dir = get_data_path()
+                    # Convert Path to string for environment variable
+                    data_path = str(package_data_dir.resolve())
+                    os.environ["GAMMAPY_DATA"] = data_path
+                except Exception as e:
+                    raise ValueError(
+                        "GAMMAPY_DATA environment variable not set and could not "
+                        f"use package data directory: {e}. "
+                        "Please set GAMMAPY_DATA to the path where the EBL data is stored, "
+                        "or ensure the sensipy package data is properly installed."
+                    )
 
         if not irf and (sensitivity_curve is None and photon_flux_curve is None):
             raise ValueError(
@@ -455,7 +464,7 @@ class Sensitivity:
                         amplitude=starting_amplitude,
                         reference=reference,
                     ),
-                    redshift=source.dist.z if source.dist is not None else 0,
+                    redshift=source.distance.z if hasattr(source, 'distance') and source.distance is not None else 0,
                     sensitivity_type="integral",
                     offset=offset,
                     n_bins=n_bins,
@@ -465,7 +474,7 @@ class Sensitivity:
                 s = self.get_sensitivity_from_model(
                     t=t,
                     spectral_model=source.get_template_spectrum(t),
-                    redshift=source.dist.z if source.dist is not None else 0,
+                    redshift=source.distance.z if hasattr(source, 'distance') and source.distance is not None else 0,
                     sensitivity_type="integral",
                     offset=offset,
                     n_bins=n_bins,

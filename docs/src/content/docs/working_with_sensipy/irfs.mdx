@@ -1,0 +1,134 @@
+---
+title: Instrument Response Functions (IRFs)
+description: Setting up and downloading CTAO IRFs for use with sensipy.
+---
+
+import {Aside, Steps, FileTree} from "@astrojs/starlight/components";
+
+## What are IRFs?
+
+Instrument Response Functions (IRFs) define the sensitivity and performance characteristics of a gamma-ray observatory under specific observing conditions. sensipy uses CTAO IRFs to calculate sensitivity curves and simulate observations.
+
+IRFs include information about:
+- **Effective area**: How sensitively the telescope collects photons
+- **Point spread function (PSF)**: Angular resolution
+- **Energy dispersion**: Energy resolution
+- **Background rates**: Expected background counts
+
+## Supported IRF Versions
+
+sensipy supports the following CTA IRF productions:
+
+- **prod5-v0.1** (Alpha Configuration, current recommendation from CTAO)
+- **prod3b-v2** (Legacy support)
+
+<Aside type="tip">
+  The most recent Alpha configuration IRFs are **prod5-v0.1**, which can be
+  found on [Zenodo](https://zenodo.org/records/5499840). The `fitsonly` version is enough for use with **sensipy**.
+</Aside>
+
+## Downloading IRFs
+
+### Automatically with the built-in IRF downloader
+
+You can use the built-in command to download the latest CTAO IRFs:
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+<Tabs>
+  <TabItem label="uv">
+    ```bash
+    uv run sensipy-download-ctao-irfs
+    ```
+  </TabItem>
+  <TabItem label="pip">
+    ```bash
+    pip install sensipy
+    sensipy-download-ctao-irfs
+    ```
+  </TabItem>
+  <TabItem label="conda">
+    ```bash
+    conda activate my-environment
+    sensipy-download-ctao-irfs
+    ```
+  </TabItem>
+</Tabs>
+
+This will automatically download and organize the latest CTAO IRFs to the `./IRFs/CTAO` directory.
+
+<Aside type="note">
+  For more download options, run `sensipy-download-ctao-irfs --help`.
+</Aside>
+
+### Manually
+
+<Steps>
+
+1. **Visit the Zenodo repository**
+
+   Go to the [CTA IRF Zenodo page](https://zenodo.org/records/5499840) to access the IRF files.
+
+2. **Download the required FITS files**
+
+   Download the `.tar.gz` archives for the sites, zenith angles, and durations you need. For example:
+
+   - `CTA-Performance-prod5-v0.1-North-20deg.FITS.tar.gz`
+   - `CTA-Performance-prod5-v0.1-South-20deg.FITS.tar.gz`
+
+3. **Extract the archives**
+
+   Extract the downloaded files into an organized directory structure.
+
+</Steps>
+
+## IRF Directory Structure
+
+Organize your IRF files following this structure:
+
+<FileTree>
+
+- IRFs/CTAO/ (root directory for all IRFs)
+  - prod5-v0.1/
+    - fits/
+      - CTA-Performance-prod5-v0.1-North-20deg.FITS.tar.gz
+      - CTA-Performance-prod5-v0.1-South-20deg.FITS.tar.gz
+      - CTA-Performance-prod5-v0.1-North-40deg.FITS.tar.gz
+      - ...
+    - ...
+  - prod3b-v2/
+    - fits/
+      - ...
+    - ...
+
+</FileTree>
+
+<Aside type="caution">
+  When initializing the `IRFHouse` class, you'll provide the path to the root
+  directory (e.g., `IRFs/CTAO/`). The package expects this specific directory
+  structure.
+</Aside>
+
+## Loading IRFs
+
+Once your IRFs are downloaded and organized, you can load them using the `IRFHouse` class:
+
+```python
+from sensipy.ctaoirf import IRFHouse
+
+# Create an IRF house pointing to your IRF directory
+house = IRFHouse(base_directory="./IRFs/CTAO")
+
+# Load a specific IRF
+irf = house.get_irf(
+    site="south",
+    configuration="alpha",
+    zenith=20,
+    duration=1800,
+    azimuth="average",
+    version="prod5-v0.1",
+)
+
+print(irf)
+```
+
