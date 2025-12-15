@@ -122,19 +122,19 @@ def create_mock_data(
     spectra_dtype = np.dtype(spectra_cols)
     spectra_rec = np.rec.array([tuple(row) for row in spectra_data], dtype=spectra_dtype)
     
-    # Create FITS header with metadata in new flexible format
-    header = fits.Header()
-    header["EVENT_ID"] = (grb_id, "event_id")
-    header["LONG"] = (0.0, "longitude [rad]")
-    header["LAT"] = (1.0, "latitude [rad]")
-    header["EISO"] = (2e50, "eiso [erg]")
-    header["DISTANCE"] = (100000.0, "distance [kpc]")
-    header["AUTHOR"] = ("", "Copernicus")  # Empty value - should be ignored
-    header["PROJECT"] = ("", "sensipy")  # Empty value - should be ignored
-    header["HISTORY"] = ("Sample time-resolved spectrum",)
-    
     # Create FITS file structure
-    primary_hdu = fits.PrimaryHDU(header=header)
+    # Create PrimaryHDU first (which automatically adds SIMPLE=True)
+    primary_hdu = fits.PrimaryHDU()
+    
+    # Add metadata to header in new flexible format
+    primary_hdu.header["EVENT_ID"] = (grb_id, "event_id")
+    primary_hdu.header["LONG"] = (0.0, "longitude [rad]")
+    primary_hdu.header["LAT"] = (1.0, "latitude [rad]")
+    primary_hdu.header["EISO"] = (2e50, "eiso [erg]")
+    primary_hdu.header["DISTANCE"] = (100000.0, "distance [kpc]")
+    primary_hdu.header["AUTHOR"] = ("", "Copernicus")  # Empty value - should be ignored
+    primary_hdu.header["PROJECT"] = ("", "sensipy")  # Empty value - should be ignored
+    primary_hdu.header["HISTORY"] = ("Sample time-resolved spectrum",)
     energy_hdu = fits.BinTableHDU(data=energy_rec, name='ENERGIES')
     time_hdu = fits.BinTableHDU(data=time_rec, name='TIMES')
     spectra_hdu = fits.BinTableHDU(data=spectra_rec, name='SPECTRA')
