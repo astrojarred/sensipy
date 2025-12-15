@@ -1,41 +1,44 @@
 ---
-title: Tutorials
-description: Step-by-step guides for using sensipy.
+title: Working with sensipy
+description: Usage documentation and guides for using sensipy.
 ---
 
 import {Card, CardGrid} from "@astrojs/starlight/components";
 
-## Welcome to the Tutorials
 
-These tutorials provide step-by-step guides for common workflows in sensipy. Each tutorial focuses on practical examples and includes complete, runnable code. 
-For comprehensive details, see the code examples in [Working with sensipy](/working_with_sensipy/overview).
+This section provides comprehensive usage documentation for sensipy. Each guide focuses on practical examples and includes complete, runnable code to help you work with gamma-ray observatory sensitivity calculations and exposure time estimates.
 
-## Available Tutorials
+## Available Guides
 
 <CardGrid>
-  <Card title="Basic Workflow" icon="rocket">
-    [Complete end-to-end workflow](./basic_workflow) from loading IRFs to
-    detecting a GRB.
+  <Card title="Instrument Response Functions" icon="open-book">
+    [Working with IRFs](./irfs) - Setting up and downloading CTAO IRFs
+    for use with sensipy.
   </Card>
 
-  <Card title="Loading IRFs" icon="open-book">
-    [Working with Instrument Response Functions](./irfs) and the
-    `IRFHouse` class.
+  <Card title="Spectral Models" icon="document">
+    [Formatting and loading spectral models](./spectral_models) - Working
+    with CSV, FITS, and text file formats for time-resolved spectra.
   </Card>
 
-  <Card title="Calculating Sensitivity" icon="puzzle">
+  <Card title="EBL Models" icon="star">
+    [Extragalactic Background Light absorption](./ebl_models) - Understanding
+    and applying EBL absorption models for extragalactic sources.
+  </Card>
+
+  <Card title="Sensitivity Calculations" icon="puzzle">
     [Computing sensitivity curves](./sensitivity) for different
-    observing conditions.
+    observing conditions and significance levels.
   </Card>
 
-  <Card title="Simulating Observations" icon="star">
-    [Simulating GRB observations](./exposure) and determining
-    detection times.
+  <Card title="Exposure Time Calculations" icon="pencil">
+    [Calculating exposure times](./exposure) needed to reach a given
+    significance for transient sources.
   </Card>
 
-  <Card title="Followup Analysis" icon="magnifier">
-    [Quick exposure calculations](./followups) using pre-computed lookup
-    tables.
+  <Card title="Followup Calculations" icon="magnifier">
+    [Fast exposure estimates](./followups) using pre-computed lookup
+    tables for large-scale studies.
   </Card>
 </CardGrid>
 
@@ -45,7 +48,6 @@ Make sure you have:
 
 1. **Installed sensipy** - See the [Installation Guide](/getting_started/installation)
 2. **Downloaded IRF files** - See the [Setup Guide](/getting_started/setup)
-3. **Basic Python knowledge** - Familiarity with Python, numpy, and astropy units
 
 ## Getting Help
 
