@@ -1,0 +1,52 @@
+---
+title: Tutorials
+description: Step-by-step guides for using sensipy.
+---
+
+import {Card, CardGrid} from "@astrojs/starlight/components";
+
+## Welcome to the Tutorials
+
+These tutorials provide step-by-step guides for common workflows in sensipy. Each tutorial focuses on practical examples and includes complete, runnable code. 
+For comprehensive details, see the code examples in [Working with sensipy](/working_with_sensipy/overview).
+
+## Available Tutorials
+
+<CardGrid>
+  <Card title="Basic Workflow" icon="rocket">
+    [Complete end-to-end workflow](./basic_workflow) from loading IRFs to
+    detecting a GRB.
+  </Card>
+
+  <Card title="Loading IRFs" icon="open-book">
+    [Working with Instrument Response Functions](./irfs) and the
+    `IRFHouse` class.
+  </Card>
+
+  <Card title="Calculating Sensitivity" icon="puzzle">
+    [Computing sensitivity curves](./sensitivity) for different
+    observing conditions.
+  </Card>
+
+  <Card title="Simulating Observations" icon="star">
+    [Simulating GRB observations](./exposure) and determining
+    detection times.
+  </Card>
+
+  <Card title="Followup Analysis" icon="magnifier">
+    [Quick exposure calculations](./followups) using pre-computed lookup
+    tables.
+  </Card>
+</CardGrid>
+
+## Before You Start
+
+Make sure you have:
+
+1. **Installed sensipy** - See the [Installation Guide](/getting_started/installation)
+2. **Downloaded IRF files** - See the [Setup Guide](/getting_started/setup)
+3. **Basic Python knowledge** - Familiarity with Python, numpy, and astropy units
+
+## Getting Help
+
+If you encounter issues, visit our [GitHub](https://github.com/astrojarred/sensipy/) and contact the maintainers or open an issue.
