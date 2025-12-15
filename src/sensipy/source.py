@@ -1314,16 +1314,24 @@ class Source:
 
         stop_time = stop_time * u.s
 
+        exposure_time = stop_time - start_time
+        
+        # Avoid divide by zero
+        if exposure_time.value <= 0:
+            return np.nan
+
         fluence = self.get_fluence(start_time, stop_time, mode=sensitivity_mode)
 
-        average_flux = fluence / (stop_time - start_time)
+        average_flux = fluence / exposure_time
 
         sens = sensitivity.get(
-            t=(stop_time - start_time),
+            t=exposure_time,
             mode=sensitivity_mode,
         ).to("GeV / (cm2 s)" if sensitivity_mode == "sensitivity" else "1 / (cm2 s)")
 
-        # exposure_time = stop_time - start_time
+        # Avoid divide by zero in sensitivity
+        if sens.value <= 0 or not np.isfinite(sens.value):
+            return np.nan
 
         # print(f"{'++' if average_flux > sens else '--'}, Exp time: {exposure_time}, Average flux: {average_flux}, Sensitivity: {sens}")
         return np.log10(average_flux.value) - np.log10(sens.value)
@@ -1465,7 +1473,11 @@ class Source:
                 **kwargs,
             )
 
-            first_root = np.nanmin(res[0])
+            # Check if res[0] is empty or all NaN before calling np.nanmin
+            if len(res[0]) == 0 or np.all(np.isnan(res[0])):
+                first_root = np.nan
+            else:
+                first_root = np.nanmin(res[0])
 
             if math.isnan(first_root):
                 self.end_time = -1 * u.s
@@ -1522,12 +1534,22 @@ class Source:
         start_time = start_time.to("s")
         stop_time = stop_time.to("s")
 
+        exposure_time = stop_time - start_time
+        
+        # Avoid divide by zero
+        if exposure_time.value <= 0:
+            return np.nan
+
         fluence = self.get_fluence(start_time, stop_time, mode=sensitivity_mode)
-        average_flux = fluence / (stop_time - start_time)
+        average_flux = fluence / exposure_time
         sens = sensitivity.get(
-            t=(stop_time - start_time),
+            t=exposure_time,
             mode=sensitivity_mode,
         ).to("GeV / (cm2 s)" if sensitivity_mode == "sensitivity" else "1 / (cm2 s)")
+
+        # Avoid divide by zero in sensitivity
+        if sens.value <= 0 or not np.isfinite(sens.value):
+            return np.nan
 
         # sens represents the 5sigma sensitivity curve
         # and significance scales with sqrt(t) for a given flux

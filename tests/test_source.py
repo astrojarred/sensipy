@@ -1,6 +1,7 @@
 """Tests for observe module, focusing on Source class with CSV data."""
 
 from pathlib import Path
+import warnings
 
 import astropy.units as u
 import numpy as np
@@ -367,7 +368,10 @@ def test_source_observe_with_irf(irf_house, mock_csv_path):
     grb = Source(mock_csv_path, min_energy=min_energy, max_energy=max_energy, ebl="franceschini")
 
     # Generate sensitivity curve first (required for observe)
-    sens.get_sensitivity_curve(source=grb)
+    # Suppress expected power law warning in tests
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message="Using a power law model for sensitivity calculation")
+        sens.get_sensitivity_curve(source=grb)
 
     # Simulate the observation (matching quick-test.ipynb lines 1-13)
     delay_time = 30 * u.min
@@ -475,8 +479,8 @@ def test_source_read_fits_custom_keys(tmp_path):
     
     # Create FITS file with custom metadata keys
     header = fits.Header()
-    header["CUSTOM_KEY1"] = (123.45, "custom_field_1 [erg]")
-    header["CUSTOM_KEY2"] = (67.89, "custom_field_2")
+    header["CUST_1"] = (123.45, "custom_field_1 [erg]")
+    header["CUST_2"] = (67.89, "custom_field_2")
     header["MY_VALUE"] = (999, "my_value")
     
     # Create minimal data arrays - need at least 2 energy and 2 time points
@@ -521,8 +525,8 @@ def test_source_read_fits_no_comment(tmp_path):
     
     # Create FITS file with keys without comments
     header = fits.Header()
-    header["NO_COMMENT"] = (42.0, "")  # No comment
-    header["ANOTHER_KEY"] = (100.0)  # No comment at all
+    header["NO_CMNT"] = (42.0, "")  # No comment
+    header["OTHER_KY"] = (100.0)  # No comment at all
     
     # Create minimal data arrays - need at least 2 energy and 2 time points
     energy_vals = np.array([1.0, 2.0, 3.0])
@@ -549,10 +553,10 @@ def test_source_read_fits_no_comment(tmp_path):
     
     source = Source(fits_file)
     # Keys without comments should use header key name (lowercase)
-    assert "no_comment" in source.metadata
-    assert "another_key" in source.metadata
-    assert source.no_comment == 42.0
-    assert source.another_key == 100.0
+    assert "no_cmnt" in source.metadata
+    assert "other_ky" in source.metadata
+    assert source.no_cmnt == 42.0
+    assert source.other_ky == 100.0
 
 
 def test_source_read_fits_distance_object(mock_fits_path):
