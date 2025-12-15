@@ -493,7 +493,7 @@ class IRFHouse(BaseModel):
                 )
                 version_results[version]["found"] += 1
             except ValueError as e:
-                log.debug(e)
+                log.debug(str(e))
                 log.debug(
                     f"Failed to find IRF for site={site}, configuration={configuration}, zenith={zenith}, duration={duration}, azimuth={azimuth}, version={version}"
                 )

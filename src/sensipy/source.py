@@ -10,7 +10,7 @@ import os
 import re
 import warnings
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 import astropy.units as u
 import matplotlib.pyplot as plt
@@ -100,7 +100,7 @@ class Source:
             self.input_times = times
 
         # initialize empty metadata dictionary (user-defined)
-        self._metadata = {}
+        self._metadata: dict[str, Any] = {}
 
         # choose reader based on file extension or directory contents
         if self.filepath.is_dir():
@@ -156,6 +156,7 @@ class Source:
         # set EBL model (and optionally update distance via redshift)
         # Check if distance metadata exists (user-defined key)
         distance = self._metadata.get("distance")
+        self.ebl_model: str | None = None
         if distance is not None and not distance == 0:
             self.set_ebl_model(ebl)
         else:
@@ -609,7 +610,12 @@ class Source:
                 for param_name, param_data in metadata_dict.items():
                     try:
                         value = param_data["value"]
-                        unit_str = param_data.get("unit", "").strip()
+                        # Convert unit to string and strip, handling various pandas types
+                        unit_raw = param_data.get("unit", "")
+                        unit_str = str(unit_raw).strip() if unit_raw is not None and pd.notna(unit_raw) else ""
+                        
+                        # Convert value to string first for safe parsing
+                        value_str = str(value) if pd.notna(value) else ""
                         
                         # Try to parse the value based on whether it has units
                         if unit_str:
@@ -617,24 +623,24 @@ class Source:
                             if param_name.lower() == "distance":
                                 # Special handling for distance (can be Distance object)
                                 try:
-                                    parsed_value = Distance(float(value), unit=unit_str)
+                                    parsed_value = Distance(float(value_str), unit=unit_str)
                                 except Exception:
                                     # Fallback to Quantity if Distance fails
-                                    parsed_value = float(value) * u.Unit(unit_str)
+                                    parsed_value = float(value_str) * u.Unit(unit_str)
                             else:
-                                parsed_value = float(value) * u.Unit(unit_str)
+                                parsed_value = float(value_str) * u.Unit(unit_str)
                         else:
                             # No units - try to determine type
                             try:
                                 # Try integer first
-                                parsed_value = int(float(value))
+                                parsed_value = int(float(value_str))
                             except (ValueError, TypeError):
                                 try:
                                     # Try float
-                                    parsed_value = float(value)
+                                    parsed_value = float(value_str)
                                 except (ValueError, TypeError):
                                     # Keep as string
-                                    parsed_value = str(value)
+                                    parsed_value = value_str
                         
                         # Store in metadata using the parameter name as the key
                         self._metadata[param_name] = parsed_value

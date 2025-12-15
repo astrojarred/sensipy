@@ -1,6 +1,6 @@
 import warnings
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 import pandas as pd
 from astropy import units as u
@@ -108,7 +108,7 @@ def extrapolate_obs_time(
         ValueError: If the requested delay is below the minimum delay available in
             the dataframe for the matching rows, or if the required columns don't exist.
     """
-    res = {}
+    res: dict[str, Any] = {}
     delay = delay.to("s").value
     event_info = lookup_df.copy()
 
@@ -301,7 +301,7 @@ def get_sensitivity(
                 # If no observatory and no irf_site, we can't determine it
                 # But we'll allow this - observatory might not be strictly necessary
                 # for some use cases. Let's default to None and let Sensitivity handle it.
-                pass
+                observatory = "_"
     else:
         # Using curves directly - observatory must be provided
         if observatory is None:
@@ -507,6 +507,12 @@ def get_exposure(
 
     # Extract ebl from filters if present, otherwise default to None
     ebl = filters.get("irf_ebl", None)
+    
+    if ebl is not None and not isinstance(ebl, str):
+        raise ValueError(f"ebl must be a string or None, got {ebl} of type {type(ebl)}")
+    
+    if not isinstance(observatory, str):
+        raise ValueError(f"observatory must be a string, got {observatory} of type {type(observatory)}")
 
     sens = get_sensitivity(
         lookup_df=lookup_df,
