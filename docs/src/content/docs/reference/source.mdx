@@ -158,12 +158,30 @@ source.show_spectral_pattern(resolution=100)
 
 #### `metadata`
 
-Property that returns source metadata dictionary.
+Property that returns a copy of the user-defined metadata dictionary. Metadata can be accessed via attribute notation (like pandas DataFrame columns) or through the dictionary.
 
 ```python
+# Access via attribute notation (recommended)
+print(source.event_id)
+print(source.distance)
+print(source.eiso)
+
+# Or access via the metadata dictionary
 meta = source.metadata
-print(meta['id'], meta['dist'], meta['eiso'])
+print(meta.get('event_id'))
+print(meta.get('distance'))
+print(meta.get('eiso'))
+
+# Set custom metadata
+source.my_custom_field = "value"
+print(source.my_custom_field)
 ```
+
+<Aside type="note">
+  Metadata is completely user-defined—there are no built-in metadata fields.
+  Keys come from your metadata CSV file or FITS header, and you can add
+  custom fields at any time via attribute assignment.
+</Aside>
 
 ### File Format Support
 

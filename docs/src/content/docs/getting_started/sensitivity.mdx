@@ -80,10 +80,22 @@ Once you have a `Source` object with a time-resolved spectrum, you can compute t
 <Tabs>
   <TabItem label="Basic Example">
     ```python
+    from sensipy.ctaoirf import IRFHouse
     from sensipy.source import Source
     from sensipy.sensitivity import Sensitivity
     from sensipy.util import get_data_path
     import astropy.units as u
+
+    # Load IRFs
+    house = IRFHouse(base_directory="./IRFs/CTAO")
+    irf = house.get_irf(
+        site="south",
+        configuration="alpha",
+        zenith=20,
+        duration=1800,
+        azimuth="average",
+        version="prod5-v0.1",
+    )
 
     # Load source
     mock_data_path = get_data_path("mock_data/GRB_42_mock.csv")
@@ -117,8 +129,31 @@ Once you have a `Source` object with a time-resolved spectrum, you can compute t
   
   <TabItem label="Custom Time Range">
     ```python
+    from sensipy.ctaoirf import IRFHouse
+    from sensipy.source import Source
     from sensipy.sensitivity import Sensitivity
+    from sensipy.util import get_data_path
     import astropy.units as u
+
+    # Load IRFs
+    house = IRFHouse(base_directory="./IRFs/CTAO")
+    irf = house.get_irf(
+        site="south",
+        configuration="alpha",
+        zenith=20,
+        duration=1800,
+        azimuth="average",
+        version="prod5-v0.1",
+    )
+
+    # Load source
+    mock_data_path = get_data_path("mock_data/GRB_42_mock.csv")
+    source = Source(
+        filepath=str(mock_data_path),
+        min_energy=20 * u.GeV,
+        max_energy=10 * u.TeV,
+        ebl="franceschini"
+    )
 
     # Specify custom time range
     sens = Sensitivity(
@@ -141,21 +176,45 @@ Once you have a `Source` object with a time-resolved spectrum, you can compute t
   
   <TabItem label="Pre-computed Curves">
     ```python
+    from sensipy.ctaoirf import IRFHouse
     from sensipy.sensitivity import Sensitivity
     import astropy.units as u
     import numpy as np
 
+    # Load IRFs
+    house = IRFHouse(base_directory="./IRFs/CTAO")
+    irf = house.get_irf(
+        site="south",
+        configuration="alpha",
+        zenith=20,
+        duration=1800,
+        azimuth="average",
+        version="prod5-v0.1",
+    )
+
     # Use pre-computed sensitivity values
-    times = np.logspace(1, 4, 20) * u.s  # 10s to 10,000s
-    sens_values = np.array([...]) * u.Unit("erg / (cm2 s)")
-    photon_flux_values = np.array([...]) * u.Unit("1 / (cm2 s)")
+    # Note: n_sensitivity_points must match the length of the curves
+    sens_values = np.array([
+        1.74e-10, 1.10e-10, 5.81e-11, 3.41e-11, 1.87e-11,
+        1.12e-11, 7.64e-12, 4.51e-12, 2.95e-12, 2.14e-12,
+        1.50e-12, 1.16e-12, 7.62e-13, 5.61e-13, 3.96e-13,
+        2.71e-13, 1.85e-13, 1.27e-13, 8.70e-14, 5.95e-14
+    ]) * u.Unit("erg / (cm2 s)")
+    photon_flux_values = np.array([
+        8.72e-10, 5.52e-10, 2.91e-10, 1.71e-10, 9.36e-11,
+        5.63e-11, 3.83e-11, 2.26e-11, 1.48e-11, 1.07e-11,
+        7.52e-12, 5.83e-12, 3.82e-12, 2.81e-12, 1.98e-12,
+        1.36e-12, 9.27e-13, 6.35e-13, 4.35e-13, 2.98e-13
+    ]) * u.Unit("1 / (cm2 s)")
 
     sens = Sensitivity(
-        irf=irf,
         observatory="ctao_south",
+        radius=3.0 * u.deg,
         min_energy=20 * u.GeV,
         max_energy=10 * u.TeV,
-        radius=3.0 * u.deg,
+        min_time=10 * u.s,        # Match the time range of your pre-computed curves
+        max_time=10000 * u.s,     # 10s to 10,000s
+        n_sensitivity_points=20,   # Must match the length of your curves
         sensitivity_curve=sens_values,
         photon_flux_curve=photon_flux_values,
     )
@@ -171,7 +230,41 @@ Once you have a `Source` object with a time-resolved spectrum, you can compute t
 After computing the sensitivity curve, you can query sensitivity at arbitrary times:
 
 ```python
+from sensipy.ctaoirf import IRFHouse
+from sensipy.source import Source
+from sensipy.sensitivity import Sensitivity
+from sensipy.util import get_data_path
 import astropy.units as u
+
+# Load IRFs
+house = IRFHouse(base_directory="./IRFs/CTAO")
+irf = house.get_irf(
+    site="south",
+    configuration="alpha",
+    zenith=20,
+    duration=1800,
+    azimuth="average",
+    version="prod5-v0.1",
+)
+
+# Load source
+mock_data_path = get_data_path("mock_data/GRB_42_mock.csv")
+source = Source(
+    filepath=str(mock_data_path),
+    min_energy=20 * u.GeV,
+    max_energy=10 * u.TeV,
+    ebl="franceschini"
+)
+
+# Create sensitivity calculator and compute curve
+sens = Sensitivity(
+    irf=irf,
+    observatory="ctao_south",
+    min_energy=20 * u.GeV,
+    max_energy=10 * u.TeV,
+    radius=3.0 * u.deg,
+)
+sens.get_sensitivity_curve(source=source)
 
 # Get sensitivity at a specific time
 time = 1000 * u.s
@@ -224,9 +317,21 @@ sensipy provides `get_sensitivity_from_model()` for directly calculating sensiti
 - More computationally intensive but accounts for full spectral shape
 
 ```python
+from sensipy.ctaoirf import IRFHouse
 from sensipy.sensitivity import Sensitivity
 from gammapy.modeling.models import PowerLawSpectralModel
 import astropy.units as u
+
+# Load IRFs
+house = IRFHouse(base_directory="./IRFs/CTAO")
+irf = house.get_irf(
+    site="south",
+    configuration="alpha",
+    zenith=20,
+    duration=1800,
+    azimuth="average",
+    version="prod5-v0.1",
+)
 
 # Create a sensitivity calculator
 sens = Sensitivity(
@@ -270,9 +375,21 @@ Examples for a power law spectral model with index 2.0 at three different timest
 - Faster computation, provides energy-dependent sensitivity
 
 ```python
+from sensipy.ctaoirf import IRFHouse
 from sensipy.sensitivity import Sensitivity
 from gammapy.modeling.models import PowerLawSpectralModel
 import astropy.units as u
+
+# Load IRFs
+house = IRFHouse(base_directory="./IRFs/CTAO")
+irf = house.get_irf(
+    site="south",
+    configuration="alpha",
+    zenith=20,
+    duration=1800,
+    azimuth="average",
+    version="prod5-v0.1",
+)
 
 # Create a sensitivity calculator
 sens = Sensitivity(
@@ -330,9 +447,16 @@ Internally, sensipy uses a `ScaledTemplateModel` to adjust the source normalizat
 ```python
 from sensipy.sensitivity import ScaledTemplateModel
 from gammapy.modeling.models import TemplateSpectralModel
+import astropy.units as u
+import numpy as np
 
-# Create a scaled template from a Gammapy model
-template_model = TemplateSpectralModel(...)
+# Create a template spectral model with energy and flux values
+energy = np.logspace(-1, 2, 10) * u.TeV  # 0.1 to 100 TeV
+values = np.ones(10) * u.Unit("1 / (TeV s cm2)")  # Constant flux
+
+template_model = TemplateSpectralModel(energy=energy, values=values)
+
+# Create a scaled template from the Gammapy model
 scaled_model = ScaledTemplateModel.from_template(
     model=template_model,
     scaling_factor=1e-6  # Scale down initial normalization
