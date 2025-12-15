@@ -261,37 +261,100 @@ class Source:
         """
         with fits.open(self.filepath) as hdu_list:
             # Read header fields and add to metadata (user-defined keys)
-            # Common FITS header keys with their expected units
-            header_mappings = {
-                "LONG": ("longitude", "rad"),
-                "LAT": ("latitude", "rad"),
-                "EISO": ("eiso", "erg"),
-                "DISTANCE": ("distance", "kpc"),  # Special handling for Distance object
-                "ANGLE": ("angle", "deg"),
-                "FLUENCE": ("fluence", "1 / cm2"),
+            # FITS header format: header["KEY"] = (value, "slug [unit]")
+            # Example: header["LAT"] = (1.0, "latitude [rad]") -> metadata["latitude"] = 1.0 * u.Unit("rad")
+            
+            # Standard FITS keywords to skip
+            standard_fits_keys = {
+                "SIMPLE", "BITPIX", "NAXIS", "NAXIS1", "NAXIS2", "NAXIS3", "NAXIS4",
+                "EXTEND", "BSCALE", "BZERO", "BLANK", "BUNIT", "DATAMAX", "DATAMIN",
+                "DATE", "DATE-OBS", "DATE-BEG", "DATE-END", "MJD", "MJD-OBS",
+                "ORIGIN", "TELESCOP", "INSTRUME", "OBSERVER", "OBJECT", "OBSID",
+                "EQUINOX", "RADECSYS", "CTYPE1", "CTYPE2", "CRVAL1", "CRVAL2",
+                "CRPIX1", "CRPIX2", "CDELT1", "CDELT2", "CUNIT1", "CUNIT2",
             }
             
-            for header_key, (metadata_key, default_unit) in header_mappings.items():
-                try:
-                    header_value = hdu_list[0].header[header_key]
-                    if header_key == "DISTANCE":
-                        self._metadata[metadata_key] = Distance(header_value, unit=default_unit)
-                    else:
-                        self._metadata[metadata_key] = header_value * u.Unit(default_unit)
-                except KeyError:
-                    log.debug(f"Header key '{header_key}' not found in FITS header")
+            header = hdu_list[0].header
             
-            # Also read any other header keys that might be user-defined
-            # Store them with lowercase keys for consistency
-            for key in hdu_list[0].header.keys():
-                if key not in header_mappings and not key.startswith("COMMENT") and not key.startswith("HISTORY"):
-                    # Store as lowercase key
-                    metadata_key = key.lower()
-                    if metadata_key not in self._metadata:  # Don't overwrite existing mappings
+            for header_key in header.keys():
+                # Skip standard FITS keywords and comment/history cards
+                if (header_key in standard_fits_keys or 
+                    header_key.startswith("COMMENT") or 
+                    header_key.startswith("HISTORY") or
+                    header_key.startswith("TTYPE") or
+                    header_key.startswith("TFORM") or
+                    header_key.startswith("TUNIT") or
+                    header_key.startswith("TSCAL") or
+                    header_key.startswith("TZERO") or
+                    header_key.startswith("TNULL") or
+                    header_key.startswith("TDISP")):
+                    continue
+                
+                try:
+                    # Get value and comment from FITS header
+                    # Format: header["KEY"] = (value, "slug [unit]")
+                    # When reading: header["KEY"] gives value, header.comments["KEY"] gives comment
+                    value = header[header_key]
+                    try:
+                        comment = header.comments[header_key].strip()
+                    except (KeyError, AttributeError):
+                        comment = ""
+                    
+                    # Skip if value is empty string
+                    if value == "" or (isinstance(value, str) and value.strip() == ""):
+                        continue
+                    
+                    if comment:
+                        # Parse comment to extract slug and unit
+                        # Format: "slug [unit]" or just "slug"
+                        # Try to extract unit from brackets: "slug [unit]"
+                        unit_match = re.search(r'\[([^\]]+)\]', comment)
+                        if unit_match:
+                            unit_str = unit_match.group(1).strip()
+                            # Extract slug (everything before the bracket)
+                            slug_match = re.match(r'^(.+?)\s*\[', comment)
+                            slug = slug_match.group(1).strip().lower() if slug_match else comment.split('[')[0].strip().lower()
+                        else:
+                            # No unit specified, use the comment as slug
+                            slug = comment.lower()
+                            unit_str = None
+                        
+                        # Convert slug to a valid Python identifier (replace spaces/special chars with underscores)
+                        slug = re.sub(r'[^\w]+', '_', slug).strip('_')
+                        
+                        if not slug:  # Skip if slug is empty
+                            continue
+                    else:
+                        # No comment, use header key name as slug (lowercase)
+                        slug = header_key.lower()
+                        unit_str = None
+                    
+                    # Convert value to appropriate type
+                    if unit_str:
+                        # Special handling for distance
+                        if slug == "distance" or slug == "dist":
+                            try:
+                                parsed_value = Distance(float(value), unit=unit_str)
+                            except Exception:
+                                parsed_value = float(value) * u.Unit(unit_str)
+                        else:
+                            parsed_value = float(value) * u.Unit(unit_str)
+                    else:
+                        # No unit, try to determine type
                         try:
-                            self._metadata[metadata_key] = hdu_list[0].header[key]
-                        except Exception:
-                            pass  # Skip if we can't read the header value
+                            parsed_value = int(float(value))
+                        except (ValueError, TypeError):
+                            try:
+                                parsed_value = float(value)
+                            except (ValueError, TypeError):
+                                parsed_value = str(value)
+                    
+                    self._metadata[slug] = parsed_value
+                    log.debug(f"Loaded metadata '{slug}' = {parsed_value} from FITS header '{header_key}'")
+                
+                except Exception as e:
+                    log.debug(f"Could not parse header key '{header_key}': {e}")
+                    continue
 
             datalc = hdu_list[3].data
             datatime = hdu_list[2].data
@@ -346,6 +409,7 @@ class Source:
         candidates.sort(key=extract_index)
 
         spectra_columns = []  # list of flux arrays per time
+        time_indices = []  # list of time indices from file names
 
         for p in candidates:
             arr = np.loadtxt(p)
@@ -353,6 +417,7 @@ class Source:
             dNdE = arr[:, 1] * u.Unit("1 / (cm2 s GeV)")
 
             spectra_columns.append(dNdE)
+            time_indices.append(extract_index(p))
 
         # set energy grid
         self.energy = energy
@@ -360,6 +425,10 @@ class Source:
         # build spectra with shape (n_energy, n_time)
         spectra_stack = u.Quantity(spectra_columns)  # (n_time, n_energy)
         self.spectra = spectra_stack.T  # (n_energy, n_time)
+
+        # set time grid from file indices (convert to seconds)
+        # Use the indices as time values in seconds
+        self.time = np.array(time_indices) * u.s
 
         if not isinstance(self.min_energy, u.Quantity):
             self.min_energy = self.energy.min()
