@@ -68,11 +68,11 @@ def sample_sensitivity_df():
 
 
 @pytest.fixture
-def sample_lookup_df():
-    """Load sample extrapolation dataframe from mock lookup table."""
+def mock_lookup_df():
+    """Load mock extrapolation dataframe from mock lookup table."""
     import pandas as pd
     
-    lookup_table_path = get_data_path("mock_data/sample_lookup_table.parquet")
+    lookup_table_path = get_data_path("mock_data/mock_lookup_table.parquet")
     df = pd.read_parquet(lookup_table_path)
     return df
 

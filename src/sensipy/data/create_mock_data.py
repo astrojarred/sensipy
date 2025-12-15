@@ -81,9 +81,9 @@ def create_mock_data(
     amplitudes = amplitudes * u.Unit("cm-2 s-1 TeV-1")
     
     # Generate lightcurves (power-law spectra at each time)
-    lightcurves: list[u.Quantity] = []
+    lightcurves_list: list[u.Quantity] = []
     for amplitude in amplitudes:
-        lightcurves.append(power_law(energy, spectral_index, amplitude))
+        lightcurves_list.append(power_law(energy, spectral_index, amplitude))
     
     # Convert to GeV for FITS format
     energy_gev = energy.to(u.GeV).value
@@ -102,14 +102,16 @@ def create_mock_data(
     time_rec = np.rec.fromarrays([initial_time, final_time], dtype=time_dtype)
     
     # Prepare spectra data (convert TeV-1 to GeV-1: multiply by 1000)
-    lightcurves_gev = np.array(lightcurves) * 1000
+    # Convert list of Quantity arrays to numpy array
+    lightcurves_array = np.array([lc.value for lc in lightcurves_list])
+    lightcurves_gev = lightcurves_array * 1000
     
     # Get bin centers
     time_bin_centers = (time_s[:-1] + time_s[1:]) / 2
     energy_bin_centers_gev = (energy_gev[:-1] + energy_gev[1:]) / 2
     
     # Use flux at bin edges (remove last time and energy bin)
-    spectra_data = lightcurves_gev[:-1, :-1]
+    spectra_data: np.ndarray = lightcurves_gev[:-1, :-1]
     
     # Create FITS_rec for spectra
     spectra_cols = []

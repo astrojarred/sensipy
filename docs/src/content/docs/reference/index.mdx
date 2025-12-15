@@ -27,9 +27,14 @@ The sensipy API is organized into several key modules:
   lookup tables.
 </Card>
 
-  <Card title="ctaoirf" icon="star">
+  <Card title="ctaoirf" icon="setting">
     [IRF and IRFHouse classes](/reference/ctaoirf) for managing instrument
     response functions.
+  </Card>
+
+  <Card title="detectability" icon="magnifier">
+    [Detectability analysis](/reference/detectability) for visualizing and
+    analyzing source detectability from lookup tables.
   </Card>
 </CardGrid>
 
@@ -40,8 +45,8 @@ sensipy/
 ├── source.py          # Source class for spectral models
 ├── sensitivity.py     # Sensitivity calculations
 ├── followup.py        # Lookup table-based calculations
+├── detectability.py   # Detectability analysis and visualization
 ├── ctaoirf.py        # IRF management
-├── plot.py           # Plotting utilities (Documentation pending)
 └── util.py           # Utility functions
 ```
 
@@ -53,6 +58,7 @@ sensipy/
 | -------------------- | --------------------- | ------------------------------------------ |
 | `Source`             | `sensipy.source`      | Load and manipulate time-resolved spectra  |
 | `Sensitivity` | `sensipy.sensitivity` | Calculate sensitivity curves using Gammapy |
+| `LookupData`         | `sensipy.detectability` | Analyze and visualize detectability data |
 | `IRFHouse`           | `sensipy.ctaoirf`     | Manage and load IRF files                  |
 | `IRF`                | `sensipy.ctaoirf`     | Represent single IRF configuration         |
 
@@ -63,6 +69,7 @@ sensipy/
 | `get_exposure()`         | `sensipy.followup` | Quick exposure calculation from lookup table |
 | `get_sensitivity()`      | `sensipy.followup` | Create Sensitivity from lookup table         |
 | `extrapolate_obs_time()` | `sensipy.followup` | Low-level interpolation function             |
+| `create_heatmap_grid()`  | `sensipy.detectability` | Create grid of detectability heatmaps |
 
 ## Type Hints and Units
 
@@ -90,6 +97,7 @@ zenith: int =20  # degrees (plain int)
 # Main classes
 from sensipy.source import Source
 from sensipy.sensitivity import Sensitivity
+from sensipy.detectability import LookupData
 from sensipy.ctaoirf import IRFHouse, IRF
 
 # Followup functions
@@ -97,6 +105,7 @@ from sensipy import followup
 
 # Or specific functions
 from sensipy.followup import get_exposure, get_sensitivity
+from sensipy.detectability import create_heatmap_grid
 
 # Units
 from astropy import units as u
@@ -109,4 +118,5 @@ Explore the detailed API documentation for each module:
 - [Source API](/reference/source) - Complete Source class documentation
 - [Sensitivity API](/reference/sensitivity) - Sensitivity calculation methods
 - [Followup API](/reference/followup) - Lookup table functions
+- [Detectability API](/reference/detectability) - Detectability analysis and visualization
 - [CTA IRF API](/reference/ctaoirf) - IRF management

@@ -50,6 +50,7 @@ export default defineConfig({
             {label: "Sensitivity Calculations", slug: "working_with_sensipy/sensitivity"},
             {label: "Simulating Observations", slug: "working_with_sensipy/exposure"},
             {label: "Followup Analysis", slug: "working_with_sensipy/followups"},
+            {label: "Detectability Analysis", slug: "working_with_sensipy/detectability"},
           ],
         },
         {
@@ -60,6 +61,7 @@ export default defineConfig({
             {label: "sensitivity", slug: "reference/sensitivity"},
             {label: "followup", slug: "reference/followup"},
             {label: "ctaoirf", slug: "reference/ctaoirf"},
+            {label: "detectability", slug: "reference/detectability"},
           ],
         },
       ],
