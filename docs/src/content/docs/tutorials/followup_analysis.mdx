@@ -1,32 +1,24 @@
 ---
 title: Followup Analysis
-description: Quick exposure calculations using pre-computed lookup tables.
+description: Tutorial on quick exposure calculations using pre-computed lookup tables.
 ---
 
 import {Aside, Steps, Tabs, TabItem} from "@astrojs/starlight/components";
 
 ## Objective
 
-Learn how to use pre-computed lookup tables for fast exposure time estimates—ideal for real-time GW alert response and large parameter studies.
+This tutorial demonstrates how to use pre-computed lookup tables for fast exposure time estimates—ideal for real-time GW alert response and large parameter studies. For comprehensive details about followup calculations, see the [Followup Calculations Guide](/getting_started/followups).
 
-##Prerequisites
+## Prerequisites
 
 - Access to a pre-computed lookup table (Parquet or CSV file)
-- Basic understanding of the observation workflow
+- Basic understanding of the observation workflow (see [Basic Workflow](./basic_workflow))
 
 <Aside type="note">
   Pre-computed lookup tables are **not included** with sensipy. Contact
-  maintainers for access to CTA O5 catalogs.
+  maintainers for access to CTA O5 catalogs. Sample lookup tables are available
+  in the package data for testing.
 </Aside>
-
-## Why Use Followup Calculations?
-
-| Method              | Speed               | Accuracy     | Use Case                          |
-| ------------------- | ------------------- | ------------ | --------------------------------- |
-| **Full Simulation** | Slow (minutes)      | Exact        | Detailed studies, custom configs  |
-| **Followup Lookup** | Fast (milliseconds) | Interpolated | Quick estimates, real-time alerts |
-
-Followup calculations are **orders of magnitude faster** because they use pre-computed observation times and interpolate rather than recalculating sensitivity curves.
 
 ## Basic Followup Query
 
@@ -40,7 +32,10 @@ Followup calculations are **orders of magnitude faster** because they use pre-co
    import pandas as pd
 
    # Load the lookup table (do this once and reuse)
-   lookup_df = pd.read_parquet("./O5_gammapy_observations_v4.parquet")
+   # Using sample lookup table included with sensipy
+   from sensipy.util import get_data_path
+   lookup_path = get_data_path("mock_data/sample_lookup_table.parquet")
+   lookup_df = pd.read_parquet(lookup_path)
 
    print(f"Loaded {len(lookup_df)} pre-computed observations")
    print(f"Columns: {list(lookup_df.columns)}")
@@ -49,24 +44,24 @@ Followup calculations are **orders of magnitude faster** because they use pre-co
 2. **Query for a Specific Event**
 
    ```python
-   # Get exposure for event ID 42 observed after a 10-second delay
+   # Get exposure for event ID 1 observed after a 10-second delay
    result = followup.get_exposure(
-       event_id=42,
+       event_id=1,
        delay=10 * u.s,
+       lookup_df=lookup_df,
        irf_site="north",
        irf_zenith=60,
-       lookup_df=lookup_df,
        irf_ebl_model="franceschini",
    )
 
    # Display results
    if result['seen']:
-       print(f"Event 42 is detectable!")
+       print(f"Event 1 is detectable!")
        print(f"  Required observation time: {result['obs_time']}")
        print(f"  Start time: {result['start_time']}")
        print(f"  End time: {result['end_time']}")
    else:
-       print(f"Event 42 is not detectable")
+       print(f"Event 1 is not detectable")
    ```
 
 </Steps>
@@ -75,366 +70,52 @@ Followup calculations are **orders of magnitude faster** because they use pre-co
 
 Query many events quickly:
 
-<Tabs>
-  <TabItem label="Simple Scan">
-    ```python
-    from sensipy import followup
-    import astropy.units as u
-    import pandas as pd
-
-    lookup_df = pd.read_parquet("./O5_gammapy_observations_v4.parquet")
-
-    # Get all unique event IDs
-    event_ids = lookup_df['event_id'].unique()[:100]  # First 100
-
-    delay = 30 * u.min
-    detectable_count = 0
-
-    for event_id in event_ids:
-        result = followup.get_exposure(
-            event_id=event_id,
-            delay=delay,
-            irf_site="south",
-            irf_zenith=20,
-            lookup_df=lookup_df,
-            irf_ebl_model="franceschini",
-        )
-
-        if result['seen']:
-            detectable_count += 1
-
-    print(f"Detection fraction: {detectable_count / len(event_ids) * 100:.1f}%")
-    ```
-
-  </TabItem>
-  
-  <TabItem label="With Details">
-    ```python
-    from sensipy import followup
-    import astropy.units as u
-    import pandas as pd
-
-    lookup_df = pd.read_parquet("./O5_gammapy_observations_v4.parquet")
-
-    event_ids = [1, 5, 10, 42, 100]
-    delay = 10 * u.s
-    results = []
-
-    for event_id in event_ids:
-        result = followup.get_exposure(
-            event_id=event_id,
-            delay=delay,
-            irf_site="north",
-            irf_zenith=40,
-            lookup_df=lookup_df,
-            irf_ebl_model="franceschini",
-        )
-        results.append(result)
-
-    # Create DataFrame for analysis
-    results_df = pd.DataFrame(results)
-
-    print(f"Detectable: {results_df['seen'].sum()}/{len(results_df)}")
-    print(f"\nDetectable events:")
-    print(results_df[results_df['seen']][['id', 'obs_time', 'dist', 'eiso']])
-    ```
-
-  </TabItem>
-</Tabs>
-
-## Delay Time Scan
-
-Find optimal observation timing for a specific event:
-
 ```python
-import numpy as np
+from sensipy import followup
+from sensipy.util import get_data_path
 import astropy.units as u
-import matplotlib.pyplot as plt
+import pandas as pd
 
-lookup_df = pd.read_parquet("./O5_gammapy_observations_v4.parquet")
+# Use sample lookup table included with sensipy
+lookup_path = get_data_path("mock_data/sample_lookup_table.parquet")
+lookup_df = pd.read_parquet(lookup_path)
 
-event_id = 10
-delays = np.logspace(0, 4, 40) * u.s  # 1s to 10,000s
-obs_times =[]
-detectable = []
+# Get all unique event IDs
+event_ids = lookup_df['event_id'].unique()[:10]  # First 10
 
-for delay in delays:
+delay = 30 * u.min
+detectable_count = 0
+
+for event_id in event_ids:
     result = followup.get_exposure(
         event_id=event_id,
         delay=delay,
+        lookup_df=lookup_df,
         irf_site="south",
         irf_zenith=20,
-        lookup_df=lookup_df,
         irf_ebl_model="franceschini",
     )
 
     if result['seen']:
-        obs_times.append(result['obs_time'].to(u.s).value)
-        detectable.append(True)
-    else:
-        obs_times.append(np.nan)
-        detectable.append(False)
+        detectable_count += 1
 
-# Plot results
-fig, ax = plt.subplots(figsize=(10, 6))
-ax.loglog(delays.value, obs_times, 'o-', markersize=6, linewidth=2)
-ax.set_xlabel("Delay from Event [s]", fontsize=12)
-ax.set_ylabel("Required Observation Time [s]", fontsize=12)
-ax.set_title(f"Event {event_id}: Observation Time vs. Delay", fontsize=14)
-ax.grid(True, alpha=0.3)
-plt.tight_layout()
-plt.show()
-
-# Find optimal delay
-valid_indices = [i for i, d in enumerate(detectable) if d]
-if valid_indices:
-    optimal_idx = valid_indices[np.argmin([obs_times[i] for i in valid_indices])]
-    print(f"Optimal delay: {delays[optimal_idx]}")
-    print(f"Minimum obs time: {obs_times[optimal_idx]:.1f} s")
+print(f"Detection fraction: {detectable_count / len(event_ids) * 100:.1f}%")
 ```
 
-## Parameter Space Exploration
-
-Explore detectability across configurations:
-
-```python
-from sensipy import followup
-import astropy.units as u
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-
-lookup_df = pd.read_parquet("./O5_gammapy_observations_v4.parquet")
-
-# Get subset of events
-event_ids = lookup_df['event_id'].unique()[:50]
-
-# Parameter grid
-delay = 60 * u.s
-sites = ["north", "south"]
-zeniths = [20, 40, 60]
-
-# Detection matrix: [site, zenith]
-detection_matrix = np.zeros((len(sites), len(zeniths)))
-
-for i, site in enumerate(sites):
-    for j, zenith in enumerate(zeniths):
-        detections = 0
-        for event_id in event_ids:
-            result = followup.get_exposure(
-                event_id=event_id,
-                delay=delay,
-                irf_site=site,
-                irf_zenith=zenith,
-                lookup_df=lookup_df,
-                irf_ebl_model="franceschini",
-            )
-            if result['seen']:
-                detections += 1
-
-        detection_matrix[i, j] = detections / len(event_ids)
-
-# Visualize
-fig, ax = plt.subplots(figsize=(8, 5))
-im = ax.imshow(detection_matrix, cmap='RdYlGn', aspect='auto', vmin=0, vmax=1)
-
-ax.set_xticks(range(len(zeniths)))
-ax.set_yticks(range(len(sites)))
-ax.set_xticklabels([f"{z}°" for z in zeniths])
-ax.set_yticklabels([s.capitalize() for s in sites])
-
-ax.set_xlabel("Zenith Angle", fontsize=12)
-ax.set_ylabel("Site", fontsize=12)
-ax.set_title(f"Detection Fraction (Delay = {delay})", fontsize=14)
-
-# Add values as text
-for i in range(len(sites)):
-    for j in range(len(zeniths)):
-        text = ax.text(j, i, f"{detection_matrix[i, j]:.2f}",
-                       ha="center", va="center", color="black", fontsize=12)
-
-plt.colorbar(im, ax=ax, label="Detection Fraction")
-plt.tight_layout()
-plt.show()
-```
-
-## Comparing with Full Simulation
-
-Verify interpolation accuracy by comparing to full simulation:
-
-```python
-from sensipy import followup
-from sensipy.ctaoirf import IRFHouse
-from sensipy.sensitivity import Sensitivity
-from sensipy.source import Source
-import astropy.units as u
-
-# Followup calculation (fast)
-lookup_df = pd.read_parquet("./O5_gammapy_observations_v4.parquet")
-result_followup = followup.get_exposure(
-    event_id=42,
-    delay=30 * u.min,
-    irf_site="south",
-    irf_zenith=20,
-    lookup_df=lookup_df,
-    irf_ebl_model="franceschini",
-)
-
-# Full simulation (slow but accurate)
-house = IRFHouse(base_directory="./IRFs/CTAO")
-irf = house.get_irf(site="south", configuration="alpha", zenith=20,
-                     duration=1800, azimuth="average", version="prod5-v0.1")
-
-source = Source(filepath="path/to/event_42.csv", min_energy=20*u.GeV,
-                max_energy=10*u.TeV, ebl="franceschini")
-
-sens = Sensitivity(irf=irf, observatory="ctao_south",
-                           min_energy=20*u.GeV, max_energy=10*u.TeV, radius=3.0*u.deg)
-sens.get_sensitivity_curve(source=source)
-
-result_full = source.observe(sensitivity=sens, start_time=30*u.min,
-                              min_energy=20*u.GeV, max_energy=10*u.TeV)
-
-# Compare
-print(f"Followup (interpolated): {result_followup['obs_time']}")
-print(f"Full simulation:         {result_full['obs_time']}")
-diff = abs(result_followup['obs_time'] - result_full['obs_time'])
-print(f"Difference:              {diff}")
-```
-
-## Performance Optimization
-
-### Cache the Lookup Table
-
-```python
-import pandas as pd
-
-# Load once at module level or script start
-LOOKUP_TABLE_CACHE = None
-
-def get_cached_lookup_table(filepath):
-    global LOOKUP_TABLE_CACHE
-    if LOOKUP_TABLE_CACHE is None:
-        print("Loading lookup table...")
-        LOOKUP_TABLE_CACHE = pd.read_parquet(filepath)
-    return LOOKUP_TABLE_CACHE
-
-# Use cached table
-lookup_df = get_cached_lookup_table("./O5_gammapy_observations_v4.parquet")
-
-# Now all queries reuse the same DataFrame
-```
-
-### Pre-filter the DataFrame
-
-```python
-# If you only need a specific configuration, filter first
-lookup_df_filtered = lookup_df[
-    (lookup_df['irf_site'] == 'south') &
-    (lookup_df['irf_zenith'] == 20) &
-    (lookup_df['irf_ebl_model'] == 'franceschini')
-].copy()
-
-# Now queries are faster
-result = followup.get_exposure(
-    event_id=42,
-    delay=30 * u.min,
-    lookup_df=lookup_df_filtered,
-    # site, zenith, ebl automatically inferred from filtered table
-)
-```
-
-## Creating Custom Lookup Tables
-
-Generate your own lookup table for a custom catalog:
-
-```python
-from sensipy.ctaoirf import IRFHouse
-from sensipy.sensitivity import Sensitivity
-from sensipy.source import Source
-import astropy.units as u
-import pandas as pd
-from pathlib import Path
-from tqdm import tqdm  # Progress bar
-
-house = IRFHouse(base_directory="./IRFs/CTAO")
-
-# Configuration grid
-sites = ["south"]
-zeniths = [20, 40, 60]
-delays = [10, 30, 100, 300, 1000, 3000] * u.s
-ebl_models = [None, "franceschini"]
-
-# Event catalog
-event_files = list(Path("./my_catalog/").glob("*.csv"))
-
-results = []
-
-# Use tqdm for progress tracking
-total = len(event_files) * len(sites) * len(zeniths) * len(ebl_models) * len(delays)
-
-with tqdm(total=total) as pbar:
-    for event_file in event_files:
-        for site in sites:
-            for zenith in zeniths:
-                for ebl in ebl_models:
-                    # Load IRF and source
-                    irf = house.get_irf(site=site, configuration="alpha", zenith=zenith,
-                                         duration=1800, azimuth="average", version="prod5-v0.1")
-
-                    source = Source(filepath=str(event_file), min_energy=20*u.GeV,
-                                     max_energy=10*u.TeV, ebl=ebl)
-
-                    # Calculate sensitivity
-                    sens = Sensitivity(irf=irf, observatory=f"ctao_{site}",
-                                               min_energy=20*u.GeV, max_energy=10*u.TeV,
-                                               radius=3.0*u.deg)
-                    sens.get_sensitivity_curve(source=source)
-
-                    # Simulate at each delay
-                    for delay in delays:
-                        result = source.observe(sensitivity=sens, start_time=delay,
-                                                 min_energy=20*u.GeV, max_energy=10*u.TeV)
-
-                        result['site'] = site
-                        result['zenith'] = zenith
-                        result['delay'] = delay.to(u.s).value
-                        result['ebl'] = ebl if ebl else "none"
-                        result['filename'] = event_file.name
-
-                        results.append(result)
-                        pbar.update(1)
-
-# Save to Parquet
-df = pd.DataFrame(results)
-df.to_parquet("my_lookup_table.parquet", index=False)
-print(f"Saved {len(df)} entries to lookup table")
-```
-
-## Troubleshooting
-
-**Problem**: "No matching rows found in lookup table"
-
-**Solution**: Verify the event ID exists and the site/zenith/EBL combination is in the table. Use `followup.get_row()` to debug.
-
----
-
-**Problem**: Unrealistic interpolated values
-
-**Solution**: The lookup table may not have enough delay points. Check the delay coverage in the table.
-
----
-
-**Problem**: Slow performance despite using lookups
-
-**Solution**:
-
-- Cache the DataFrame (load once, reuse many times)
-- Use Parquet instead of CSV
-- Pre-filter the DataFrame to reduce size
+<Aside type="note">
+  For more examples including delay scans, parameter space exploration, and
+  performance optimization, see the [Followup Calculations Guide](/getting_started/followups).
+</Aside>
 
 ## Next Steps
 
+- See the [Followup Calculations Guide](/getting_started/followups) for:
+  - Delay time scans and finding optimal observation windows
+  - Parameter space exploration
+  - Comparing with full simulation
+  - Performance optimization (caching, pre-filtering)
+  - Creating custom lookup tables
+  - Helper functions (`get_row`, `extrapolate_obs_time`)
+  - Troubleshooting tips
 - Review [Simulating Observations](./simulating_observations) for full simulation details
-- See [Followup API Reference](/reference/followup) for detailed documentation
-- Explore [Exposure Calculations](/getting_started/exposure) for algorithm background
+- Check the [Followup API Reference](/reference/followup) for detailed documentation

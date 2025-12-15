@@ -1,28 +1,20 @@
 ---
 title: Loading IRFs
-description: Working with Instrument Response Functions using the IRFHouse class.
+description: Tutorial on working with Instrument Response Functions using the IRFHouse class.
 ---
 
 import {Aside, Steps, Tabs, TabItem} from "@astrojs/starlight/components";
 
 ## Objective
 
-Learn how to load and manage Instrument Response Functions (IRFs) for CTA using the `IRFHouse` class.
+This tutorial shows you how to load and use Instrument Response Functions (IRFs) for CTA using the `IRFHouse` class. For setup instructions and downloading IRFs, see the [IRFs Guide](/getting_started/irfs).
 
-## What are IRFs?
+## Prerequisites
 
-Instrument Response Functions (IRFs) describe the performance of a gamma-ray telescope under specific observing conditions. They include:
+- IRF files downloaded and organized (see [Setup Guide](/getting_started/setup) and [IRFs Guide](/getting_started/irfs))
+- Python environment with sensipy installed
 
-- **Effective area**: How sensitively the telescope collects photons
-- **Point spread function (PSF)**: Angular resolution
-- **Energy dispersion**: Energy resolution
-- **Background rates**: Expected background counts
-
-## The IRFHouse Class
-
-The `IRFHouse` class manages multiple IRF files and provides a simple interface to load specific configurations.
-
-### Basic Usage
+## Basic Usage
 
 <Steps>
 
@@ -50,60 +42,25 @@ The `IRFHouse` class manages multiple IRF files and provides a simple interface 
    print(irf)
    ```
 
+   **Expected output:**
+
+   ```
+   CTA IRF [prod5-v0.1]
+       filepath: .../CTA-Performance-prod5-v0.1-South-20deg...
+       config: alpha
+       site: south
+       zenith: 20º
+       duration: 1800s
+       azimuth: average
+   ```
+
 </Steps>
 
-## IRF Parameters
-
-### Site
-
-| Value     | Description                                           |
-| --------- | ----------------------------------------------------- |
-| `"south"` | CTA South (Paranal, Chile) - better for southern sky  |
-| `"north"` | CTA North (La Palma, Spain) - better for northern sky |
-
-<Aside type="tip">
-  Use "south" for most extragalactic transients and Galactic Center
-  observations.
+<Aside type="note">
+  For detailed information about IRF parameters (site, configuration, zenith angle, etc.), see the [IRFs Guide](/getting_started/irfs).
 </Aside>
 
-### Configuration
-
-| Value         | Description                    | Telescopes                       |
-| ------------- | ------------------------------ | -------------------------------- |
-| `"alpha"`     | Alpha configuration (baseline) | 4 LSTs, 25 MSTs, 70 SSTs (South) |
-| `"omega"`     | Omega configuration            | Different layout                 |
-| `"alpha_lst"` | Alpha LST-only                 | 4 LSTs only                      |
-
-### Zenith Angle
-
-Supported values: `20`, `40`, `60` (degrees)
-
-Lower zenith = better sensitivity (source closer to zenith)
-
-### Duration
-
-IRF observation time: `1800`, `18000`, `180000` (seconds)
-
-This is the duration for which the IRF was calculated, NOT your actual observation time.
-
-### Azimuth
-
-| Value       | Description                    |
-| ----------- | ------------------------------ |
-| `"average"` | Azimuth-averaged (recommended) |
-| `"north"`   | Northern azimuth               |
-| `"south"`   | Southern azimuth               |
-
-### Version
-
-| Value          | Description                            |
-| -------------- | -------------------------------------- |
-| `"prod5-v0.1"` | Production 5 version 0.1 (recommended) |
-| `"prod3b-v2"`  | Production 3b version 2 (legacy)       |
-
-## Examples
-
-### Quick Select Examples
+## Common Examples
 
 <Tabs>
   <TabItem label="Optimal Sensitivity">
@@ -112,7 +69,7 @@ This is the duration for which the IRF was calculated, NOT your actual observati
     irf = house.get_irf(
         site="south",
         configuration="alpha",
-        zenith=20,  # Low zenith
+        zenith=20,  # Low zenith = better sensitivity
         duration=1800,
         azimuth="average",
         version="prod5-v0.1",
@@ -120,12 +77,19 @@ This is the duration for which the IRF was calculated, NOT your actual observati
     ```
   </TabItem>
 
-{" "}
-<TabItem label="High Zenith">
-  ```python # Higher zenith (worse sensitivity, but more sky coverage) irf =
-  house.get_irf( site="north", configuration="alpha", zenith=60, # High zenith
-  duration=1800, azimuth="average", version="prod5-v0.1", ) ```
-</TabItem>
+  <TabItem label="High Zenith">
+    ```python
+    # Higher zenith (worse sensitivity, but more sky coverage)
+    irf = house.get_irf(
+        site="north",
+        configuration="alpha",
+        zenith=60,  # High zenith
+        duration=1800,
+        azimuth="average",
+        version="prod5-v0.1",
+    )
+    ```
+  </TabItem>
 
   <TabItem label="Northern Site">
     ```python
@@ -235,27 +199,9 @@ irf = house.get_irf(
 )
 ```
 
-## Troubleshooting
-
-**Problem**: `FileNotFoundError` when loading IRF
-
-**Solution**:
-
-- Verify IRF files are downloaded and extracted
-- Check the directory structure matches the expected format
-- Ensure `base_directory` points to the root IRF directory
-
----
-
-**Problem**: "IRF version not found"
-
-**Solution**:
-
-- Verify you have the requested IRF version downloaded
-- Check the version string matches exactly (e.g., "prod5-v0.1" not "prod5v0.1")
-
 ## Next Steps
 
-- Learn [Calculating Sensitivity](./calculating_sensitivity) using these IRFs
-- See [Basic Workflow](./basic_workflow) for complete example
-- Check [IRF API Reference](/reference/ctaoirf) for detailed documentation
+- Continue with the [Basic Workflow](./basic_workflow) tutorial to use IRFs in a complete example
+- Learn about [Sensitivity Calculations](/getting_started/sensitivity) using these IRFs
+- Check the [IRF API Reference](/reference/ctaoirf) for detailed documentation
+- See the [IRFs Guide](/getting_started/irfs) for setup and troubleshooting details
