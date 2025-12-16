@@ -209,17 +209,192 @@ def test_source_get_spectral_amplitude(mock_csv_path):
     assert amplitude.unit == u.Unit("cm-2 s-1 GeV-1")
 
 
-def test_source_get_gammapy_spectrum(mock_csv_path):
-    """Test getting gammapy spectrum."""
+def test_source_get_powerlaw_spectrum(mock_csv_path):
+    """Test getting powerlaw spectrum."""
     source = Source(mock_csv_path)
     source.fit_spectral_indices()
 
     time = source.time[len(source.time) // 2]
-    spectrum = source.get_gammapy_spectrum(time)
+    spectrum = source.get_powerlaw_spectrum(time)
 
     assert spectrum is not None
     assert hasattr(spectrum, "index")
     assert hasattr(spectrum, "amplitude")
+
+
+def test_source_get_powerlaw_spectrum_with_ebl(mock_csv_path):
+    """Test getting powerlaw spectrum with EBL."""
+    source = Source(mock_csv_path, ebl="franceschini")
+    source.fit_spectral_indices()
+
+    time = source.time[len(source.time) // 2]
+    spectrum = source.get_powerlaw_spectrum(time, use_ebl=True)
+
+    assert spectrum is not None
+    # When EBL is applied, the model becomes a CompoundSpectralModel
+    # Check that we can call the model (it should work)
+    from gammapy.modeling.models import CompoundSpectralModel
+    assert isinstance(spectrum._model, CompoundSpectralModel)
+    # Check that EBL was applied
+    assert source.ebl is not None
+
+
+def test_source_get_template_spectrum_with_ebl(mock_csv_path):
+    """Test getting template spectrum with EBL."""
+    source = Source(mock_csv_path, ebl="franceschini")
+    source.set_spectral_grid()
+
+    time = source.time[len(source.time) // 2]
+    spectrum = source.get_template_spectrum(time, use_ebl=True)
+
+    assert spectrum is not None
+    # When EBL is applied, the model becomes a CompoundSpectralModel
+    # Check that we can call the model (it should work)
+    from gammapy.modeling.models import CompoundSpectralModel
+    assert isinstance(spectrum._model, CompoundSpectralModel)
+    # Check that EBL was applied
+    assert source.ebl is not None
+
+
+def test_source_spectrum_plot_energy_range(mock_csv_path):
+    """Test that plot() method uses source energy limits."""
+    source = Source(mock_csv_path, min_energy=30 * u.GeV, max_energy=10 * u.TeV)
+    source.fit_spectral_indices()
+
+    time = source.time[len(source.time) // 2]
+    spectrum = source.get_powerlaw_spectrum(time)
+
+    # Check that plot method exists and can be called
+    assert hasattr(spectrum, "plot")
+    assert callable(spectrum.plot)
+    
+    # The plot method should automatically use source energy limits
+    # We can't easily test the actual plot call without matplotlib backend,
+    # but we can verify the wrapper is working
+    assert hasattr(spectrum, "_source")
+    assert spectrum._source == source
+
+
+def test_source_get_powerlaw_spectrum_ebl_default(mock_csv_path):
+    """Test that use_ebl=None defaults to True when EBL model is set."""
+    source = Source(mock_csv_path, ebl="franceschini")
+    source.fit_spectral_indices()
+
+    time = source.time[len(source.time) // 2]
+    # use_ebl=None should default to True since EBL model is set
+    spectrum = source.get_powerlaw_spectrum(time, use_ebl=None)
+    
+    # Check that EBL was applied (model should be a compound model)
+    from gammapy.modeling.models import CompoundSpectralModel
+    assert isinstance(spectrum._model, CompoundSpectralModel)
+    assert source.ebl is not None
+
+
+def test_source_get_powerlaw_spectrum_ebl_default_no_ebl(mock_csv_path):
+    """Test that use_ebl=None defaults to False when EBL model is not set."""
+    source = Source(mock_csv_path)
+    source.fit_spectral_indices()
+
+    time = source.time[len(source.time) // 2]
+    # use_ebl=None should default to False since no EBL model is set
+    spectrum = source.get_powerlaw_spectrum(time, use_ebl=None)
+    
+    # Check that EBL was not applied (model should be a PowerLawSpectralModel)
+    from gammapy.modeling.models import PowerLawSpectralModel
+    assert isinstance(spectrum._model, PowerLawSpectralModel)
+    assert source.ebl is None
+
+
+def test_source_get_template_spectrum_ebl_default(mock_csv_path):
+    """Test that use_ebl=None defaults to True when EBL model is set for template."""
+    source = Source(mock_csv_path, ebl="franceschini")
+    source.set_spectral_grid()
+
+    time = source.time[len(source.time) // 2]
+    # use_ebl=None should default to True since EBL model is set
+    spectrum = source.get_template_spectrum(time, use_ebl=None)
+    
+    # Check that EBL was applied (model should be a compound model)
+    from gammapy.modeling.models import CompoundSpectralModel
+    assert isinstance(spectrum._model, CompoundSpectralModel)
+    assert source.ebl is not None
+
+
+def test_source_init_with_distance(mock_csv_path):
+    """Test Source initialization with distance parameter."""
+    from astropy.coordinates import Distance
+    
+    distance = Distance(z=0.5)
+    source = Source(mock_csv_path, distance=distance)
+    
+    # Check that distance was set (use tolerance for floating point comparison)
+    stored_distance = source._metadata.get("distance")
+    assert stored_distance is not None
+    assert abs(stored_distance.z.value - distance.z.value) < 1e-6
+
+
+def test_source_init_with_z(mock_csv_path):
+    """Test Source initialization with z parameter."""
+    source = Source(mock_csv_path, z=0.5)
+    
+    # Check that distance was set from z
+    distance = source._metadata.get("distance")
+    assert distance is not None
+    assert abs(distance.z.value - 0.5) < 1e-6
+
+
+def test_source_init_distance_z_conflict(mock_csv_path):
+    """Test that providing both distance and z raises ValueError."""
+    from astropy.coordinates import Distance
+    
+    distance = Distance(z=0.5)
+    with pytest.raises(ValueError, match="Only one of 'distance' or 'z' can be provided"):
+        Source(mock_csv_path, distance=distance, z=0.3)
+
+
+def test_source_set_ebl_model_with_distance(mock_csv_path):
+    """Test set_ebl_model with distance parameter."""
+    from astropy.coordinates import Distance
+    
+    source = Source(mock_csv_path)
+    distance = Distance(z=0.5)
+    
+    # Set EBL model with distance
+    result = source.set_ebl_model("franceschini", distance=distance)
+    
+    # Check that distance was set and EBL model was configured
+    assert result is True  # Distance was changed
+    assert source._metadata.get("distance") == distance
+    assert source.ebl is not None
+
+
+def test_source_set_ebl_model_distance_z_conflict(mock_csv_path):
+    """Test that providing both distance and z to set_ebl_model raises ValueError."""
+    from astropy.coordinates import Distance
+    
+    source = Source(mock_csv_path)
+    distance = Distance(z=0.5)
+    
+    with pytest.raises(ValueError, match="Only one of 'distance' or 'z' can be provided"):
+        source.set_ebl_model("franceschini", distance=distance, z=0.3)
+
+
+def test_source_distance_overrides_metadata(mock_csv_path):
+    """Test that provided distance/z overrides metadata distance."""
+    from astropy.coordinates import Distance
+    
+    # Source with metadata distance
+    source1 = Source(mock_csv_path)
+    metadata_distance = source1._metadata.get("distance")
+    
+    # Source with explicit distance parameter
+    new_distance = Distance(z=0.7)
+    source2 = Source(mock_csv_path, distance=new_distance)
+    
+    # Check that explicit distance overrides metadata
+    assert source2._metadata.get("distance") == new_distance
+    if metadata_distance is not None:
+        assert source2._metadata.get("distance") != metadata_distance
 
 
 def test_source_repr(mock_csv_path):
