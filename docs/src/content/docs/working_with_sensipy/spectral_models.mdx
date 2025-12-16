@@ -533,6 +533,12 @@ template_with_ebl = source.get_template_spectrum(time, use_ebl=True)
 </TabItem>
 </Tabs>
 
+**Comparison plots:**
+
+![Power law spectrum with and without EBL](/powerlaw_spectrum_ebl_comparison.png)
+
+![Template spectrum with and without EBL](/template_spectrum_ebl_comparison.png)
+
 ### Automatic Energy Range in Plots
 
 Both exported models have an overridden `.plot()` method that automatically uses the source's `min_energy` and `max_energy`:
@@ -544,12 +550,6 @@ powerlaw_model.plot()
 # You can still override the energy range if needed
 powerlaw_model.plot(energy_range=(0.1 * u.TeV, 5 * u.TeV))
 ```
-
-**Comparison plots:**
-
-![Power law spectrum with and without EBL](/powerlaw_spectrum_ebl_comparison.png)
-
-![Template spectrum with and without EBL](/template_spectrum_ebl_comparison.png)
 
 ## Energy Range Considerations
 
