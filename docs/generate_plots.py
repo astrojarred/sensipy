@@ -578,6 +578,174 @@ class PlotGenerator:
         print("  - detectability_filtered.png")
         print("  - detectability_grid.png")
 
+    def generate_spectrum_export_plots(self):
+        """Generate plots for spectrum export examples with/without EBL."""
+        # Load mock data
+        mock_data_path = get_data_path("mock_data/GRB_42_mock.csv")
+        
+        # Create source with EBL model
+        source_with_ebl = Source(
+            filepath=str(mock_data_path),
+            min_energy=20 * u.GeV,
+            max_energy=10 * u.TeV,
+            ebl="franceschini",
+            z=1.0,
+        )
+        source_with_ebl.set_spectral_grid()
+        source_with_ebl.fit_spectral_indices()
+        
+        # Create source without EBL for comparison
+        source_no_ebl = Source(
+            filepath=str(mock_data_path),
+            min_energy=20 * u.GeV,
+            max_energy=10 * u.TeV,
+        )
+        source_no_ebl.set_spectral_grid()
+        source_no_ebl.fit_spectral_indices()
+        
+        time = 100 * u.s
+        
+        # Plot 1: Power law spectrum with/without EBL
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+        
+        # Without EBL
+        powerlaw_no_ebl = source_no_ebl.get_powerlaw_spectrum(time, use_ebl=False)
+        energy_plot = np.logspace(
+            np.log10(source_no_ebl.min_energy.value),
+            np.log10(source_no_ebl.max_energy.value),
+            100
+        ) * u.GeV
+        flux_no_ebl = powerlaw_no_ebl(energy_plot)
+        
+        ax1.loglog(energy_plot.to("TeV").value, flux_no_ebl.value, linewidth=2, label="Without EBL")
+        ax1.set_xlabel("Energy [TeV]", fontsize=12)
+        ax1.set_ylabel("dN/dE [cm⁻² s⁻¹ GeV⁻¹]", fontsize=12)
+        ax1.set_title("Power Law Spectrum (No EBL)", fontsize=14)
+        ax1.grid(True, alpha=0.3)
+        ax1.legend(fontsize=11)
+        
+        # With EBL
+        powerlaw_with_ebl = source_with_ebl.get_powerlaw_spectrum(time, use_ebl=True)
+        flux_with_ebl = powerlaw_with_ebl(energy_plot)
+        
+        ax2.loglog(energy_plot.to("TeV").value, flux_with_ebl.value, linewidth=2, label="With EBL", color="orange")
+        ax2.set_xlabel("Energy [TeV]", fontsize=12)
+        ax2.set_ylabel("dN/dE [cm⁻² s⁻¹ GeV⁻¹]", fontsize=12)
+        ax2.set_title("Power Law Spectrum (With EBL)", fontsize=14)
+        ax2.grid(True, alpha=0.3)
+        ax2.legend(fontsize=11)
+        
+        plt.tight_layout()
+        plt.savefig(
+            self.output_dir / "powerlaw_spectrum_ebl_comparison.png",
+            dpi=150,
+            bbox_inches="tight",
+        )
+        plt.close()
+        
+        # Plot 2: Comparison plot showing EBL effect
+        fig, ax = plt.subplots(figsize=(10, 6))
+        
+        ax.loglog(
+            energy_plot.to("TeV").value,
+            flux_no_ebl.value,
+            linewidth=2,
+            label="Without EBL",
+            linestyle="-",
+        )
+        ax.loglog(
+            energy_plot.to("TeV").value,
+            flux_with_ebl.value,
+            linewidth=2,
+            label="With EBL (franceschini)",
+            linestyle="--",
+            color="orange",
+        )
+        ax.set_xlabel("Energy [TeV]", fontsize=12)
+        ax.set_ylabel("dN/dE [cm⁻² s⁻¹ GeV⁻¹]", fontsize=12)
+        ax.set_title("Power Law Spectrum: EBL Absorption Effect", fontsize=14)
+        ax.grid(True, alpha=0.3)
+        ax.legend(fontsize=11)
+        
+        plt.tight_layout()
+        plt.savefig(
+            self.output_dir / "powerlaw_spectrum_ebl_effect.png",
+            dpi=150,
+            bbox_inches="tight",
+        )
+        plt.close()
+        
+        # Plot 3: Template spectrum with/without EBL
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+        
+        # Without EBL
+        template_no_ebl = source_no_ebl.get_template_spectrum(time, use_ebl=False)
+        flux_template_no_ebl = template_no_ebl(energy_plot)
+        
+        ax1.loglog(energy_plot.to("TeV").value, flux_template_no_ebl.value, linewidth=2, label="Without EBL")
+        ax1.set_xlabel("Energy [TeV]", fontsize=12)
+        ax1.set_ylabel("dN/dE [cm⁻² s⁻¹ GeV⁻¹]", fontsize=12)
+        ax1.set_title("Template Spectrum (No EBL)", fontsize=14)
+        ax1.grid(True, alpha=0.3)
+        ax1.legend(fontsize=11)
+        
+        # With EBL
+        template_with_ebl = source_with_ebl.get_template_spectrum(time, use_ebl=True)
+        flux_template_with_ebl = template_with_ebl(energy_plot)
+        
+        ax2.loglog(energy_plot.to("TeV").value, flux_template_with_ebl.value, linewidth=2, label="With EBL", color="orange")
+        ax2.set_xlabel("Energy [TeV]", fontsize=12)
+        ax2.set_ylabel("dN/dE [cm⁻² s⁻¹ GeV⁻¹]", fontsize=12)
+        ax2.set_title("Template Spectrum (With EBL)", fontsize=14)
+        ax2.grid(True, alpha=0.3)
+        ax2.legend(fontsize=11)
+        
+        plt.tight_layout()
+        plt.savefig(
+            self.output_dir / "template_spectrum_ebl_comparison.png",
+            dpi=150,
+            bbox_inches="tight",
+        )
+        plt.close()
+        
+        # Plot 4: Template comparison showing EBL effect
+        fig, ax = plt.subplots(figsize=(10, 6))
+        
+        ax.loglog(
+            energy_plot.to("TeV").value,
+            flux_template_no_ebl.value,
+            linewidth=2,
+            label="Without EBL",
+            linestyle="-",
+        )
+        ax.loglog(
+            energy_plot.to("TeV").value,
+            flux_template_with_ebl.value,
+            linewidth=2,
+            label="With EBL (franceschini)",
+            linestyle="--",
+            color="orange",
+        )
+        ax.set_xlabel("Energy [TeV]", fontsize=12)
+        ax.set_ylabel("dN/dE [cm⁻² s⁻¹ GeV⁻¹]", fontsize=12)
+        ax.set_title("Template Spectrum: EBL Absorption Effect", fontsize=14)
+        ax.grid(True, alpha=0.3)
+        ax.legend(fontsize=11)
+        
+        plt.tight_layout()
+        plt.savefig(
+            self.output_dir / "template_spectrum_ebl_effect.png",
+            dpi=150,
+            bbox_inches="tight",
+        )
+        plt.close()
+        
+        print("Generated spectrum export plots:")
+        print("  - powerlaw_spectrum_ebl_comparison.png")
+        print("  - powerlaw_spectrum_ebl_effect.png")
+        print("  - template_spectrum_ebl_comparison.png")
+        print("  - template_spectrum_ebl_effect.png")
+
     def generate_all(self):
         """Generate all documentation plots."""
         print("Generating documentation plots...")
@@ -587,6 +755,7 @@ class PlotGenerator:
         self.generate_sensitivity_plots()
         self.generate_direct_sensitivity_plots()
         self.generate_detectability_plots()
+        self.generate_spectrum_export_plots()
 
         print(f"\nAll plots saved to {self.output_dir}")
 
@@ -603,7 +772,7 @@ def main():
         "--plot-type",
         nargs="?",
         default="all",
-        choices=["all", "spectral", "sensitivity", "direct_sensitivity", "detectability"],
+        choices=["all", "spectral", "sensitivity", "direct-sensitivity", "detectability", "spectrum-export"],
         help="Type of plot to generate (default: all)",
     )
     parser.add_argument(
@@ -624,10 +793,12 @@ def main():
         generator.generate_spectral_plots()
     elif args.plot_type == "sensitivity":
         generator.generate_sensitivity_plots()
-    elif args.plot_type == "direct_sensitivity":
+    elif args.plot_type == "direct-sensitivity":
         generator.generate_direct_sensitivity_plots()
     elif args.plot_type == "detectability":
         generator.generate_detectability_plots()
+    elif args.plot_type == "spectrum-export":
+        generator.generate_spectrum_export_plots()
 
 
 if __name__ == "__main__":

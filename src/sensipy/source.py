@@ -34,6 +34,82 @@ from .util import get_data_path
 log = logger(__name__)
 
 
+class _SpectralModelWrapper:
+    """Wrapper class for gammapy SpectralModel objects that automatically sets energy range in plot().
+    
+    This wrapper overrides the plot() method to automatically use the source's min_energy
+    and max_energy as the energy range, while forwarding all other attributes and methods
+    to the wrapped model.
+    """
+    
+    def __init__(self, model, source):
+        """Initialize the wrapper.
+        
+        Args:
+            model: The gammapy SpectralModel instance to wrap.
+            source: The Source instance that provides min_energy and max_energy.
+        """
+        self._model = model
+        self._source = source
+    
+    def __getattribute__(self, name):
+        """Override __getattribute__ to make isinstance checks work with __class__."""
+        if name == "__class__":
+            # Return the wrapped model's class for isinstance checks
+            return type(object.__getattribute__(self, "_model"))
+        return object.__getattribute__(self, name)
+    
+    def plot(self, energy_range=None, **kwargs):
+        """Plot the spectral model with automatic energy range.
+        
+        If energy_range is not provided, automatically uses the source's min_energy
+        and max_energy. The first positional argument can also be a tuple of
+        (min_energy, max_energy).
+        
+        Args:
+            energy_range: Optional energy range tuple (min_energy, max_energy).
+                If None, uses source.min_energy and source.max_energy.
+            **kwargs: Additional arguments passed to the wrapped model's plot() method.
+        
+        Returns:
+            The result of the wrapped model's plot() method.
+        """
+        if energy_range is None:
+            if self._source.min_energy is not None and self._source.max_energy is not None:
+                energy_range = (self._source.min_energy, self._source.max_energy)
+        
+        # Call plot with energy_range as first positional argument if provided
+        if energy_range is not None:
+            return self._model.plot(energy_range, **kwargs)
+        else:
+            return self._model.plot(**kwargs)
+    
+    def __call__(self, *args, **kwargs):
+        """Make the wrapper callable like the wrapped model."""
+        return self._model(*args, **kwargs)
+    
+    def __getattr__(self, name):
+        """Forward all other attributes and methods to the wrapped model."""
+        return getattr(self._model, name)
+    
+    def __mul__(self, other):
+        """Support multiplication (e.g., for EBL absorption)."""
+        from gammapy.modeling.models import SpectralModel
+        result = self._model * other
+        # Return a new wrapper if the result is still a SpectralModel
+        if isinstance(result, SpectralModel):
+            return _SpectralModelWrapper(result, self._source)
+        return result
+    
+    def __rmul__(self, other):
+        """Support right multiplication."""
+        from gammapy.modeling.models import SpectralModel
+        result = other * self._model
+        if isinstance(result, SpectralModel):
+            return _SpectralModelWrapper(result, self._source)
+        return result
+
+
 class Source:
     """Class for loading and analyzing time-energy spectra of astrophysical events.
 
@@ -53,6 +129,11 @@ class Source:
             If None, uses the maximum energy from the data.
         ebl: Name of the EBL absorption model to apply (e.g., "franceschini", "dominguez").
             If None and a distance/redshift is available, no EBL model is applied.
+        times: Specific times to load (optional).
+        distance: Distance to the source as an astropy Distance object. Overrides any
+            distance extracted from metadata. Only one of distance or z can be provided.
+        z: Redshift of the source. Overrides any distance/redshift extracted from metadata.
+            Only one of distance or z can be provided.
 
     Attributes:
         time: Array of time values (astropy Quantity, units of seconds).
@@ -78,7 +159,13 @@ class Source:
         max_energy: u.Quantity | None = None,
         ebl: str | None = None,
         times: list[u.Quantity] | None = None,
+        distance: Distance | None = None,
+        z: float | None = None,
     ) -> None:
+        # Validate mutual exclusivity of distance and z
+        if distance is not None and z is not None:
+            raise ValueError("Only one of 'distance' or 'z' can be provided, not both.")
+        
         if isinstance(min_energy, u.Quantity):
             min_energy = min_energy.to("GeV")
         if isinstance(max_energy, u.Quantity):
@@ -153,11 +240,23 @@ class Source:
         # fit spectral indices
         self.fit_spectral_indices()
 
+        # Override metadata distance if provided (after reading metadata from file)
+        if distance is not None:
+            self._metadata["distance"] = distance
+        elif z is not None:
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    "ignore",
+                    message=".*fval is not bracketed.*",
+                    category=RuntimeWarning,
+                )
+                self._metadata["distance"] = Distance(z=z)
+
         # set EBL model (and optionally update distance via redshift)
         # Check if distance metadata exists (user-defined key)
-        distance = self._metadata.get("distance")
+        distance_metadata = self._metadata.get("distance")
         self.ebl_model: str | None = None
-        if distance is not None and not distance == 0:
+        if distance_metadata is not None and not distance_metadata == 0:
             self.set_ebl_model(ebl)
         else:
             self.ebl = None
@@ -677,11 +776,11 @@ class Source:
         if not isinstance(self.max_energy, u.Quantity):
             self.max_energy = self.energy.max()
 
-    def set_ebl_model(self, ebl: str | None, z: float | None = None) -> bool:
-        """Set or update the EBL absorption model and optionally the source redshift.
+    def set_ebl_model(self, ebl: str | None, z: float | None = None, distance: Distance | None = None) -> bool:
+        """Set or update the EBL absorption model and optionally the source distance or redshift.
 
         Configures the extragalactic background light (EBL) absorption model for the source.
-        If a redshift is provided, the source distance is updated accordingly. The EBL model
+        If a distance or redshift is provided, the source distance is updated accordingly. The EBL model
         is used to account for gamma-ray absorption due to pair production with EBL photons.
 
         Args:
@@ -689,28 +788,43 @@ class Source:
                 in Gammapy (e.g., "franceschini", "dominguez", etc.). If None, no EBL model
                 is set. Requires GAMMAPY_DATA environment variable to be set.
             z: Optional redshift value. If provided and different from the current redshift,
-                the source distance is updated using the default cosmology.
+                the source distance is updated using the default cosmology. Only one of distance
+                or z can be provided.
+            distance: Optional distance to the source as an astropy Distance object. If provided
+                and different from the current distance, the source distance is updated. Only one
+                of distance or z can be provided.
 
         Returns:
             True if the distance (redshift) was changed, False otherwise.
 
         Raises:
-            ValueError: If the EBL model name is not recognized, or if GAMMAPY_DATA
-                environment variable is not set when attempting to use an EBL model.
+            ValueError: If the EBL model name is not recognized, if both distance and z are
+                provided, or if GAMMAPY_DATA environment variable is not set when attempting
+                to use an EBL model.
         """
+        # Validate mutual exclusivity of distance and z
+        if distance is not None and z is not None:
+            raise ValueError("Only one of 'distance' or 'z' can be provided, not both.")
+        
         distance_changed = False
 
-        # Determine current redshift if available
-        current_z_val = None
-        try:
-            dist = self._metadata.get("distance")
-            if dist is not None and dist.z is not None:
-                current_z_val = float(dist.z.value)
-        except (AttributeError, TypeError, ValueError):
+        # Update distance if provided
+        if distance is not None:
+            current_dist = self._metadata.get("distance")
+            if current_dist != distance:
+                self._metadata["distance"] = distance
+                distance_changed = True
+        elif z is not None:
+            # Determine current redshift if available
             current_z_val = None
+            try:
+                dist = self._metadata.get("distance")
+                if dist is not None and dist.z is not None:
+                    current_z_val = float(dist.z.value)
+            except (AttributeError, TypeError, ValueError):
+                current_z_val = None
 
-        # Update distance if a new redshift is supplied
-        if z is not None:
+            # Update distance if a new redshift is supplied
             if (current_z_val is None) or (not np.isclose(z, current_z_val)):
                 # Suppress the astropy cosmology optimizer warning
                 with warnings.catch_warnings():
@@ -938,53 +1052,125 @@ class Source:
                 (np.log10(energy.value), np.log10(time.value))
             ) * u.Unit("1 / (cm2 s GeV)")
 
-    def get_gammapy_spectrum(
+    def get_powerlaw_spectrum(
         self,
         time: u.Quantity,
         amplitude: u.Quantity | None = None,
         reference: u.Quantity = 1 * u.TeV,
+        use_ebl: bool | None = None,
     ):
         """Create a Gammapy PowerLawSpectralModel representing the spectrum at a given time.
 
         Fits a power law to the spectrum at the specified time and returns a Gammapy
         spectral model. The spectral index is determined from the fitted indices, and
         the amplitude is either calculated at the reference energy or provided directly.
+        Optionally applies EBL absorption if requested and available.
 
         Args:
             time: Time at which to evaluate the spectrum. Must have time units.
             amplitude: Optional amplitude at the reference energy. If None, the amplitude
                 is calculated from the flux at the reference energy.
             reference: Reference energy for the power law model. Defaults to 1 TeV.
+            use_ebl: If True, apply EBL absorption to the model. If None, defaults to True
+                if an EBL model is set (via constructor or set_ebl_model()), otherwise False.
+                Defaults to None.
 
         Returns:
-            PowerLawSpectralModel instance representing the spectrum at the given time.
+            PowerLawSpectralModel instance (wrapped) representing the spectrum at the given time.
+            If use_ebl=True and EBL is available, returns the model with EBL absorption applied.
+            The returned model has an overridden plot() method that automatically uses
+            the source's min_energy and max_energy.
         """
-        return PowerLawSpectralModel(
+        # Default to True if EBL model is set, otherwise False
+        if use_ebl is None:
+            use_ebl = self.ebl is not None
+        
+        model = PowerLawSpectralModel(
             index=-self.get_spectral_index(time),
             amplitude=self.get_flux(energy=reference, time=time).to("cm-2 s-1 TeV-1")
             if amplitude is None
             else amplitude,
             reference=reference,
         )
+        
+        # Apply EBL absorption if requested
+        if use_ebl:
+            if self.ebl is not None:
+                model = model * self.ebl
+            else:
+                # Check if we can set up EBL from metadata
+                distance = self._metadata.get("distance")
+                if distance is not None and distance != 0:
+                    # Try to use existing ebl_model or default to franceschini
+                    ebl_model_name = self.ebl_model or "franceschini"
+                    self.set_ebl_model(ebl_model_name)
+                    if self.ebl is not None:
+                        model = model * self.ebl
+                    else:
+                        log.warning(
+                            "EBL requested but could not be set. Returning model without EBL absorption."
+                        )
+                else:
+                    log.warning(
+                        "EBL requested but no distance/redshift available. Returning model without EBL absorption."
+                    )
+        
+        # Return wrapped model for automatic energy range in plot()
+        return _SpectralModelWrapper(model, self)
 
-    def get_template_spectrum(self, time: u.Quantity, scaling_factor: int | float = 1):
+    def get_template_spectrum(self, time: u.Quantity, scaling_factor: int | float = 1, use_ebl: bool | None = None):
         """Create a template spectral model from the spectrum at a given time.
 
         Extracts the full energy spectrum at the specified time and wraps it in a
         ScaledTemplateModel, which can be used for likelihood fitting with an
-        adjustable normalization.
+        adjustable normalization. Optionally applies EBL absorption if requested and available.
 
         Args:
             time: Time at which to extract the spectrum. Must have time units.
             scaling_factor: Initial scaling factor for the template model. Defaults to 1.
+            use_ebl: If True, apply EBL absorption to the model. If None, defaults to True
+                if an EBL model is set (via constructor or set_ebl_model()), otherwise False.
+                Defaults to None.
 
         Returns:
-            ScaledTemplateModel instance containing the spectrum at the given time.
+            ScaledTemplateModel instance (wrapped) containing the spectrum at the given time.
+            If use_ebl=True and EBL is available, returns the model with EBL absorption applied.
+            The returned model has an overridden plot() method that automatically uses
+            the source's min_energy and max_energy.
         """
+        # Default to True if EBL model is set, otherwise False
+        if use_ebl is None:
+            use_ebl = self.ebl is not None
+        
         dNdE = self.get_spectrum(time)
-        return ScaledTemplateModel(
+        model = ScaledTemplateModel(
             energy=self.energy, values=dNdE, scaling_factor=scaling_factor
         )
+        
+        # Apply EBL absorption if requested
+        if use_ebl:
+            if self.ebl is not None:
+                model = model * self.ebl
+            else:
+                # Check if we can set up EBL from metadata
+                distance = self._metadata.get("distance")
+                if distance is not None and distance != 0:
+                    # Try to use existing ebl_model or default to franceschini
+                    ebl_model_name = self.ebl_model or "franceschini"
+                    self.set_ebl_model(ebl_model_name)
+                    if self.ebl is not None:
+                        model = model * self.ebl
+                    else:
+                        log.warning(
+                            "EBL requested but could not be set. Returning model without EBL absorption."
+                        )
+                else:
+                    log.warning(
+                        "EBL requested but no distance/redshift available. Returning model without EBL absorption."
+                    )
+        
+        # Return wrapped model for automatic energy range in plot()
+        return _SpectralModelWrapper(model, self)
 
     def fit_spectral_indices(self):
         """Fit power-law spectral indices for each time bin.
@@ -1127,7 +1313,7 @@ class Source:
         time: u.Quantity,
         first_energy_bin: u.Quantity,
         mode: Literal["sensitivity", "photon_flux"] = "sensitivity",
-        fit_powerlaw: bool = True,
+        fit_powerlaw: bool = False,
     ):
         """Calculate the integral flux or energy flux over the energy range.
 
@@ -1142,7 +1328,7 @@ class Source:
                 in calculation). Must have energy units.
             mode: Integration mode. "photon_flux" returns the integral flux (photons),
                 "sensitivity" returns the energy flux (GeV).
-            fit_powerlaw: If True, use a power-law model; if False, use the template spectrum.
+            fit_powerlaw: If True, fit a power-law model at each time step; if False, use the template spectrum.
 
         Returns:
             Integral flux (u.Quantity with units cm⁻² s⁻¹) for photon_flux mode, or
@@ -1168,7 +1354,7 @@ class Source:
         # spectral_index_plus = spectral_index + amount_to_add
 
         if fit_powerlaw:
-            model = self.get_gammapy_spectrum(time)
+            model = self.get_powerlaw_spectrum(time)
         else:
             model = self.get_template_spectrum(time)
 

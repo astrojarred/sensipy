@@ -18,6 +18,8 @@ Source(
     max_energy: u.Quantity | None = None,
     ebl: str | None = None,
     times: list[u.Quantity] | None = None,
+    distance: Distance | None = None,
+    z: float | None = None,
 )
 ```
 
@@ -30,6 +32,10 @@ Source(
 | `max_energy` | `u.Quantity \| None`       | Maximum energy for analysis                            |
 | `ebl`        | `str \| None`              | EBL model name (`"franceschini"`, `"dominguez"`, etc.) |
 | `times`      | `list[u.Quantity] \| None` | Specific times to load (optional)                      |
+| `distance`   | `Distance \| None`          | Distance to source (overrides metadata distance)       |
+| `z`          | `float \| None`            | Redshift (overrides metadata distance/redshift)        |
+
+**Note:** Only one of `distance` or `z` can be provided, not both.
 
 **Example:**
 
@@ -37,14 +43,34 @@ Source(
 from sensipy.source import Source
 from sensipy.util import get_data_path
 from astropy import units as u
+from astropy.coordinates import Distance
 
 # Get path to package mock data
 mock_data_path = get_data_path("mock_data/GRB_42_mock.csv")
 
+# Basic usage
 source = Source(
     filepath=str(mock_data_path),
     min_energy=20 * u.GeV,
     max_energy=10 * u.TeV,
+    ebl="franceschini"
+)
+
+# With explicit distance
+source_with_distance = Source(
+    filepath=str(mock_data_path),
+    min_energy=20 * u.GeV,
+    max_energy=10 * u.TeV,
+    distance=Distance(z=0.5),
+    ebl="franceschini"
+)
+
+# With explicit redshift
+source_with_z = Source(
+    filepath=str(mock_data_path),
+    min_energy=20 * u.GeV,
+    max_energy=10 * u.TeV,
+    z=0.5,
     ebl="franceschini"
 )
 ```
@@ -127,18 +153,192 @@ flux_value = source.get_flux(energy=1 * u.TeV, time=100 * u.s)
 Set or update EBL absorption model.
 
 ```python
-set_ebl_model(ebl: str | None, z: float | None = None) -> None
+set_ebl_model(ebl: str | None, z: float | None = None, distance: Distance | None = None) -> bool
 ```
 
 **Parameters:**
 
 - `ebl`: EBL model name or `None` to remove
 - `z`: Redshift (optional, auto-detected from metadata if available)
+- `distance`: Distance to source as astropy Distance object (optional)
+
+**Note:** Only one of `distance` or `z` can be provided, not both.
+
+**Returns:** `True` if the distance was changed, `False` otherwise.
 
 ```python
+from astropy.coordinates import Distance
+
+# Using redshift
 source.set_ebl_model("franceschini", z=0.5)
-source.set_ebl_model(None)  # Remove EBL
+
+# Using distance
+distance = Distance(z=0.5)
+source.set_ebl_model("franceschini", distance=distance)
+
+# Remove EBL
+source.set_ebl_model(None)
 ```
+
+#### `get_powerlaw_spectrum()`
+
+Create a Gammapy PowerLawSpectralModel representing the spectrum at a given time.
+
+```python
+get_powerlaw_spectrum(
+    time: u.Quantity,
+    amplitude: u.Quantity | None = None,
+    reference: u.Quantity = 1 * u.TeV,
+    use_ebl: bool | None = None,
+) -> PowerLawSpectralModel
+```
+
+**Parameters:**
+
+| Parameter   | Type              | Description                                                      |
+| ----------- | ----------------- | ---------------------------------------------------------------- |
+| `time`      | `u.Quantity`      | Time at which to evaluate the spectrum                          |
+| `amplitude` | `u.Quantity \| None` | Optional amplitude at reference energy (auto-calculated if None) |
+| `reference` | `u.Quantity`      | Reference energy for power law (default: 1 TeV)                 |
+| `use_ebl`   | `bool \| None`    | Apply EBL absorption. If None, defaults to True if EBL model is set, otherwise False |
+
+**Returns:** Wrapped PowerLawSpectralModel with automatic energy range in `plot()` method.
+
+**Examples:**
+
+<Tabs>
+<TabItem label="Without EBL">
+
+```python
+from sensipy.source import Source
+from sensipy.util import get_data_path
+import astropy.units as u
+
+mock_data_path = get_data_path("mock_data/GRB_42_mock.csv")
+source = Source(
+    filepath=str(mock_data_path),
+    min_energy=20 * u.GeV,
+    max_energy=10 * u.TeV,
+)
+
+time = 100 * u.s
+# Explicitly disable EBL (or use_ebl=None defaults to False when no EBL model is set)
+spectrum = source.get_powerlaw_spectrum(time, use_ebl=False)
+
+# Plot automatically uses source.min_energy and source.max_energy
+spectrum.plot()
+```
+
+</TabItem>
+<TabItem label="With EBL (default)">
+
+```python
+from sensipy.source import Source
+from sensipy.util import get_data_path
+import astropy.units as u
+
+mock_data_path = get_data_path("mock_data/GRB_42_mock.csv")
+source = Source(
+    filepath=str(mock_data_path),
+    min_energy=20 * u.GeV,
+    max_energy=10 * u.TeV,
+    ebl="franceschini",  # Set EBL model
+)
+
+time = 100 * u.s
+# use_ebl=None defaults to True when EBL model is set
+spectrum_with_ebl = source.get_powerlaw_spectrum(time)
+
+# Plot shows absorbed spectrum
+spectrum_with_ebl.plot()
+```
+
+</TabItem>
+</Tabs>
+
+#### `get_template_spectrum()`
+
+Create a template spectral model from the spectrum at a given time.
+
+```python
+get_template_spectrum(
+    time: u.Quantity,
+    scaling_factor: int | float = 1,
+    use_ebl: bool | None = None,
+) -> ScaledTemplateModel
+```
+
+**Parameters:**
+
+| Parameter        | Type         | Description                                    |
+| ---------------- | ------------ | ---------------------------------------------- |
+| `time`           | `u.Quantity` | Time at which to extract the spectrum         |
+| `scaling_factor` | `int \| float` | Initial scaling factor (default: 1)          |
+| `use_ebl`        | `bool \| None` | Apply EBL absorption. If None, defaults to True if EBL model is set, otherwise False |
+
+**Returns:** Wrapped ScaledTemplateModel with automatic energy range in `plot()` method.
+
+**Examples:**
+
+<Tabs>
+<TabItem label="Without EBL">
+
+```python
+from sensipy.source import Source
+from sensipy.util import get_data_path
+import astropy.units as u
+
+mock_data_path = get_data_path("mock_data/GRB_42_mock.csv")
+source = Source(
+    filepath=str(mock_data_path),
+    min_energy=20 * u.GeV,
+    max_energy=10 * u.TeV,
+)
+
+time = 100 * u.s
+# Explicitly disable EBL (or use_ebl=None defaults to False when no EBL model is set)
+template = source.get_template_spectrum(time, use_ebl=False)
+
+# Plot automatically uses source.min_energy and source.max_energy
+template.plot()
+```
+
+</TabItem>
+<TabItem label="With EBL (default)">
+
+```python
+from sensipy.source import Source
+from sensipy.util import get_data_path
+import astropy.units as u
+
+mock_data_path = get_data_path("mock_data/GRB_42_mock.csv")
+source = Source(
+    filepath=str(mock_data_path),
+    min_energy=20 * u.GeV,
+    max_energy=10 * u.TeV,
+    ebl="franceschini",  # Set EBL model
+)
+
+time = 100 * u.s
+# use_ebl=None defaults to True when EBL model is set
+template_with_ebl = source.get_template_spectrum(time)
+
+# Plot shows absorbed spectrum
+template_with_ebl.plot()
+```
+
+</TabItem>
+</Tabs>
+
+<Aside type="note">
+  Both `get_powerlaw_spectrum()` and `get_template_spectrum()` return wrapped models
+  that automatically use the source's `min_energy` and `max_energy` when calling `.plot()`.
+  You can still override the energy range by passing `energy_range` explicitly to `plot()`.
+  
+  When `use_ebl=None` (the default), EBL absorption is automatically applied if an EBL model
+  has been set (via the constructor or `set_ebl_model()`). Set `use_ebl=False` to explicitly
+  disable EBL absorption, or `use_ebl=True` to force it even if no EBL model is set.
+</Aside>
 
 #### `show_spectral_pattern()`
 

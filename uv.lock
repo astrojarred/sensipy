@@ -1813,7 +1813,7 @@ wheels = [
 
 [[package]]
 name = "sensipy"
-version = "4.0b5"
+version = "4.0b8"
 source = { editable = "." }
 dependencies = [
     { name = "astropy" },
