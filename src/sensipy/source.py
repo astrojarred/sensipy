@@ -52,10 +52,12 @@ class _SpectralModelWrapper:
         self._model = model
         self._source = source
     
-    @property
-    def __class__(self):
-        """Make isinstance checks pass by returning the wrapped model's class."""
-        return type(self._model)
+    def __getattribute__(self, name):
+        """Override __getattribute__ to make isinstance checks work with __class__."""
+        if name == "__class__":
+            # Return the wrapped model's class for isinstance checks
+            return type(object.__getattribute__(self, "_model"))
+        return object.__getattribute__(self, name)
     
     def plot(self, energy_range=None, **kwargs):
         """Plot the spectral model with automatic energy range.
