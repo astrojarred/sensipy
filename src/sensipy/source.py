@@ -1127,7 +1127,7 @@ class Source:
         time: u.Quantity,
         first_energy_bin: u.Quantity,
         mode: Literal["sensitivity", "photon_flux"] = "sensitivity",
-        fit_powerlaw: bool = True,
+        fit_powerlaw: bool = False,
     ):
         """Calculate the integral flux or energy flux over the energy range.
 
@@ -1142,7 +1142,7 @@ class Source:
                 in calculation). Must have energy units.
             mode: Integration mode. "photon_flux" returns the integral flux (photons),
                 "sensitivity" returns the energy flux (GeV).
-            fit_powerlaw: If True, use a power-law model; if False, use the template spectrum.
+            fit_powerlaw: If True, fit a power-law model at each time step; if False, use the template spectrum.
 
         Returns:
             Integral flux (u.Quantity with units cm⁻² s⁻¹) for photon_flux mode, or

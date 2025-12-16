@@ -412,7 +412,7 @@ class Sensitivity:
         n_bins: int | None = None,
         starting_amplitude: u.Quantity = 1e-12 * u.Unit("TeV-1 cm-2 s-1"),
         reference: u.Quantity = 1 * u.TeV,
-        fit_powerlaw: bool = True,
+        fit_powerlaw: bool = False,
         **kwargs,
     ) -> None:
         """Get the sensitivity curve for a given source.
