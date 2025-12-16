@@ -1,6 +1,6 @@
 [project]
 name = "sensipy"
-version = "4.0-beta.7"
+version = "4.0-beta.8"
 description = "A Python toolkit to simulate instrument sensitivity and plan follow-up observations of time-variable astrophysical sources with gamma-ray observatories."
 authors = [
     { name = "Jarred Green", email = "jgreen@mpp.mpg.de" },
