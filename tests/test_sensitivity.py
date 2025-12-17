@@ -1,5 +1,7 @@
 """Tests for sensitivity module."""
 
+import warnings
+
 import astropy.units as u
 import numpy as np
 import pytest
@@ -387,10 +389,13 @@ def test_sensitivity_get_sensitivity_curve(irf_house, mock_csv_path):
     )
 
     # Load in a GRB and add EBL (matching quick-test.ipynb)
-    grb = Source(mock_csv_path, min_energy=min_energy, max_energy=max_energy, ebl="franceschini")
+    event = Source(mock_csv_path, min_energy=min_energy, max_energy=max_energy, ebl="franceschini")
 
     # Load the sensitivity curve for the GRB (matching quick-test.ipynb line 1-2)
-    sens.get_sensitivity_curve(source=grb)
+    # Suppress expected power law warning in tests
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message="Using a power law model for sensitivity calculation")
+        sens.get_sensitivity_curve(source=event)
 
     # Verify sensitivity_curve is populated
     assert len(sens.sensitivity_curve) > 0

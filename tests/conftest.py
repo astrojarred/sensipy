@@ -10,12 +10,13 @@ from urllib.request import urlretrieve
 import pytest
 
 from sensipy.ctaoirf import IRFHouse
+from sensipy.util import get_data_path
 
 
 @pytest.fixture
 def mock_data_dir():
     """Return the path to the mock data directory."""
-    return Path(__file__).parent.parent / "data" / "mock_data"
+    return get_data_path("mock_data")
 
 
 @pytest.fixture
@@ -34,7 +35,6 @@ def mock_metadata_path(mock_data_dir):
 def mock_fits_path(mock_data_dir):
     """Return the path to the mock FITS file."""
     return mock_data_dir / "GRB_42_mock.fits"
-
 
 @pytest.fixture
 def sample_sensitivity_df():
@@ -56,12 +56,10 @@ def sample_sensitivity_df():
 
     df = pd.DataFrame(
         {
-            "coinc_event_id": [42, 42, 42],
+            "event_id": [1, 1, 1],
             "irf_site": ["north", "north", "south"],
             "irf_zenith": [20, 40, 20],
-            "irf_ebl": [False, False, True],
-            "irf_config": ["alpha", "alpha", "alpha"],
-            "irf_duration": [1800, 1800, 1800],
+            "irf_ebl_model": ["franceschini", "franceschini", "franceschini"],
             "sensitivity_curve": sensitivity_curves,
             "photon_flux_curve": photon_flux_curves,
         }
@@ -70,30 +68,12 @@ def sample_sensitivity_df():
 
 
 @pytest.fixture
-def sample_extrapolation_df():
-    """Create a sample extrapolation dataframe for testing."""
+def mock_lookup_df():
+    """Load mock extrapolation dataframe from mock lookup table."""
     import pandas as pd
-
-    df = pd.DataFrame(
-        {
-            "coinc_event_id": [42, 42, 42, 42],
-            "obs_delay": [100, 1000, 10000, 100000],
-            "obs_time": [10, 100, 1000, 10000],
-            "irf_site": ["north", "north", "north", "north"],
-            "irf_zenith": [20, 20, 20, 20],
-            "long": [0.0, 0.0, 0.0, 0.0],
-            "lat": [1.0, 1.0, 1.0, 1.0],
-            "eiso": [2e50, 2e50, 2e50, 2e50],
-            "dist": [100000.0, 100000.0, 100000.0, 100000.0],
-            "theta_view": [5.0, 5.0, 5.0, 5.0],
-            "irf_ebl_model": [
-                "dominguez11",
-                "dominguez11",
-                "dominguez11",
-                "dominguez11",
-            ],
-        }
-    )
+    
+    lookup_table_path = get_data_path("mock_data/mock_lookup_table.parquet")
+    df = pd.read_parquet(lookup_table_path)
     return df
 
 
@@ -250,9 +230,14 @@ def irf_house():
     
     # Set GAMMAPY_DATA if not already set
     if "GAMMAPY_DATA" not in os.environ:
-        data_dir = Path(__file__).parent.parent / "data"
-        if data_dir.exists():
-            os.environ["GAMMAPY_DATA"] = str(data_dir)
+        try:
+            data_dir = get_data_path()
+            os.environ["GAMMAPY_DATA"] = str(data_dir.resolve())
+        except Exception:
+            # Fallback: try old location for development
+            data_dir = Path(__file__).parent.parent / "src" / "sensipy" / "data"
+            if data_dir.exists():
+                os.environ["GAMMAPY_DATA"] = str(data_dir)
     
     # Create IRFHouse instance
     house = IRFHouse(base_directory=str(irf_dir), check_irfs=False)
