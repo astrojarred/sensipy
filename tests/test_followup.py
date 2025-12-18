@@ -154,6 +154,27 @@ def test_get_sensitivity_from_curves():
     sensitivity_curve = np.logspace(-10, -12, 10) * u.Unit("erg cm-2 s-1")
     photon_flux_curve = np.logspace(-9, -11, 10) * u.Unit("cm-2 s-1")
     
+    # test as quantities
+    sens = followup.get_sensitivity(
+        sensitivity_curve=sensitivity_curve,
+        photon_flux_curve=photon_flux_curve,
+        observatory="ctao_north",
+    )
+    
+    assert sens is not None
+    assert sens.observatory == "ctao_north"
+    
+    # test as numpy arrays
+    sens = followup.get_sensitivity(
+        sensitivity_curve=sensitivity_curve.value,
+        photon_flux_curve=photon_flux_curve.value,
+        observatory="ctao_north",
+    )
+    
+    assert sens is not None
+    assert sens.observatory == "ctao_north"
+    
+    # test as a list
     sens = followup.get_sensitivity(
         sensitivity_curve=sensitivity_curve.value.tolist(),
         photon_flux_curve=photon_flux_curve.value.tolist(),
@@ -162,6 +183,7 @@ def test_get_sensitivity_from_curves():
     
     assert sens is not None
     assert sens.observatory == "ctao_north"
+
 
 
 def test_get_sensitivity_conflicting_inputs(mock_lookup_df):
