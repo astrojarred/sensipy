@@ -4,7 +4,7 @@ from typing import Any, Literal
 
 import pandas as pd
 from astropy import units as u
-from numpy import log10
+from numpy import log10, ndarray
 from scipy.interpolate import interp1d
 
 from . import sensitivity, source
@@ -309,11 +309,11 @@ def get_sensitivity(
                 "observatory parameter is required when providing sensitivity_curve and photon_flux_curve directly."
             )
 
-    if isinstance(sensitivity_curve, (list, u.Quantity)):
+    if isinstance(sensitivity_curve, (list, u.Quantity, ndarray)):
         n_sensitivity_points = len(sensitivity_curve)
     else:
         raise ValueError(
-            f"sensitivity_curve must be a list or u.Quantity, got {type(sensitivity_curve)}"
+            f"sensitivity_curve must be a list, np.ndarray or u.Quantity, got {type(sensitivity_curve)}"
         )
 
     sens = sensitivity.Sensitivity(
