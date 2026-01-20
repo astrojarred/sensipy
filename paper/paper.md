@@ -58,11 +58,12 @@ The need for a toolkit like `sensipy` became clear when we were attempting to es
 1.7 seconds later, the Fermi and INTEGRAL observatories detected a short gamma-ray burst (GRB) in the same region of sky in the keV energy band, opening the gates to the field of multi-messenger astronomy.
 In January 2019, the Fermi and Swift observatories detected a GRB and quickly alerted the community. Within one minute, the Major Atmospheric Gamma Imaging Cherenkov (MAGIC) telescopes pointed to the same position and provided the first evidence of TeV-band emission from a GRB. -->
 
-Between GW, neutrino, optical, and orbiting gamma-ray experiments, thousands of low-latency alerts are sent out to the greater community each year. However, very few of these events actually result in detections in the VHE gamma-ray regime. This is due to many factors, including the rapid decay of fluxes, delay in telescope repointing, uncertainty on the sky localization of the source, and observatory duty cycles. In the face of these challenges, `sensipy` aims to help answer the following questions for gamma-ray astronomers interested in optimizing their follow-up campaigns:
+Between GW, neutrino, optical, and space-based gamma-ray experiments, thousands of low-latency alerts are sent out to the greater community each year. However, very few of these events actually result in detections in the VHE gamma-ray regime. This is due to many factors, including the rapid decay of fluxes, delay in telescope repointing, uncertainty on the sky localization of the source, and observatory duty cycles. In the face of these challenges, `sensipy` aims to help answer the following questions for gamma-ray astronomers interested in optimizing their follow-up campaigns:
 
 - Given a theoretical emission model, what are the detection possibilities with a given instrument?
 - How much observing time is needed to detect a source given you are delayed in starting observations?
-- How much time after the onset of a given event does the source become undetectable?
+- At what significance level is a source detectable given a certain observation time?
+- How long does a source remain detectable after the onset of emission?
 - How can intrinsic source properties (eg distance, flux), and observing conditions (eg latency, telescope pointing) affect detectability?
 - How can these results for catalogs of simulated events inform follow-up strategies in realtime?
 
@@ -70,7 +71,7 @@ Between GW, neutrino, optical, and orbiting gamma-ray experiments, thousands of 
 
 The two main inputs to any `sensipy` pipeline are:
 
-- an instrument response function (IRF), which describes how a telescope performs under specific observing conditions
+- an instrument response function (IRF), which describes how a telescope performs under specific observing conditions.
 - intrinsic time-dependent emission spectra for a source, which can be provided in either a FITS or CSV format.
 
 Given these inputs, `sensipy` toolkit builds upon the primitives provided by `numpy`, `scipy`, `astropy`, and `gammapy` to provide the following main functionalities. In addition, mock datasets are provided with working code examples, and batteries are included for easy access to publicly-available IRFs.  
@@ -83,7 +84,7 @@ Sensitivity curves represent the minimum flux needed to detect a source at a giv
 
 ## Simulating Observations with `sensipy.source`
 
-This class addresses the fundamental question: if we begin observations with a latency of $t_L = X~\text{min}$ after an alert, what observation time is required in order to achieve a detection? Given that the user has already calculated the sensitivity curve for an event, `sensipy` can determine if the source is actually detectable, given $T_L$. When detectable, the exposure time necessary for detection is also calculated.
+This class addresses the fundamental question: if we begin observations with a latency of $t_L = X~\text{min}$ after an alert, what observation time is required in order to achieve a detection? In addition, the class can also determine the inverse: given an observation time, at what significance can a source be detected. Given that the user has already calculated the sensitivity curve for an event, `sensipy` can determine if the source is actually detectable, given $T_L$. When detectable, the exposure time necessary for detection is also calculated.
 
 ## Working with large catalogs with `sensipy.detectability`
 
