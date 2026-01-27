@@ -44,7 +44,7 @@ date: 02 December 2025
 ---
 # Summary
 
-We present `sensipy`, an open-source Python toolkit for simulating observations of transient astrophysical sources, particularly in the high-energy (HE, keV-GeV) and very-high-energy (VHE, GeV-TeV) gamma-ray sky.
+We present `sensipy`, an open-source Python toolkit for simulating observations of transient astrophysical sources, particularly in the high-energy (HE, keV-GeV) and very-high-energy (VHE, GeV-TeV) gamma-ray ranges.
 The most explosive events in our universe are often short-lived, emitting the bulk of their energy in a relatively small time window.
 Due to often rapidly fading emission profiles, understanding how and when to observe these sources is crucial to both test theoretical predictions and efficiently optimize the available telescope time.
 
@@ -52,7 +52,7 @@ The information extracted from the tools included in `sensipy` can be used to he
 
 # Statement of need
 
-The need for a toolkit like `sensipy` became clear when we were attempting to estimate the detectability of VHE counterparts to GW signals from binary neutron star mergers (BNS) with the upcoming Cherenkov Telescope Array Observatory (CTAO). While this toolklit began development with the aim to optimize a strategy for such joint detections with CTAO, the usefulness of the package became apparent and can be applied not only to VHE counterparts of BNS mergers, but also to other transient sources like GRBs, AGN flares, novae, supernovae, and more.
+The need for a toolkit like `sensipy` became clear when we were attempting to estimate the detectability of VHE counterparts to gravitational wave (GW) signals from binary neutron star mergers (BNS) with the upcoming Cherenkov Telescope Array Observatory (CTAO). While this toolklit began development with the aim to optimize a strategy for such GW+gamma joint detections with CTAO, the usefulness of the package became apparent and can be applied not only to VHE counterparts of BNS mergers, but also to other transient sources like gamma-ray bursts (GRBs), active galactic nuclei (AGN) flares, novae, supernovae, and more.
 
 <!-- In its third observing run, the Advanced LIGO and Advanced Virgo observatories detected gravitational waves (GWs) from the binary neutron star (BNS) merger event GW170817.
 1.7 seconds later, the Fermi and INTEGRAL observatories detected a short gamma-ray burst (GRB) in the same region of sky in the keV energy band, opening the gates to the field of multi-messenger astronomy.
@@ -61,7 +61,7 @@ In January 2019, the Fermi and Swift observatories detected a GRB and quickly al
 Between GW, neutrino, optical, and space-based gamma-ray experiments, thousands of low-latency alerts are sent out to the greater community each year. However, very few of these events actually result in detections in the VHE gamma-ray regime. This is due to many factors, including the rapid decay of fluxes, delay in telescope repointing, uncertainty on the sky localization of the source, and observatory duty cycles. In the face of these challenges, `sensipy` aims to help answer the following questions for gamma-ray astronomers interested in optimizing their follow-up campaigns:
 
 - Given a theoretical emission model, what are the detection possibilities with a given instrument?
-- How much observing time is needed to detect a source given you are delayed in starting observations?
+- How much observing time is needed to detect a source given a delay in starting observations?
 - At what significance level is a source detectable given a certain observation time?
 - How long does a source remain detectable after the onset of emission?
 - How can intrinsic source properties (eg distance, flux), and observing conditions (eg latency, telescope pointing) affect detectability?
