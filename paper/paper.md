@@ -46,13 +46,13 @@ date: 02 December 2025
 
 We present `sensipy`, an open-source Python toolkit for simulating observations of transient astrophysical sources, particularly in the high-energy (HE, keV-GeV) and very-high-energy (VHE, GeV-TeV) gamma-ray ranges.
 The most explosive events in our universe are often short-lived, emitting the bulk of their energy in a relatively small time window.
-Due to often rapidly fading emission profiles, understanding how and when to observe these sources is crucial to both test theoretical predictions and efficiently optimize the available telescope time.
+Due to often rapidly fading emission profiles, understanding how and when to observe these sources is crucial to both test theoretical predictions and efficiently optimize available telescope time.
 
 The information extracted from the tools included in `sensipy` can be used to help astronomers investigate the detectability of sources considering different theoretical assumptions about their emission processes and mechanisms. This information can further help to justify the feasibility of proposed observations, estimate detection rates (events/year) for various classes of sources, and provide scheduling in realtime during gamma-ray and multi-messenger observational campaigns.
 
 # Statement of need
 
-The need for a toolkit like `sensipy` became clear when we were attempting to estimate the detectability of VHE counterparts to gravitational wave (GW) signals from binary neutron star mergers (BNS) with the upcoming Cherenkov Telescope Array Observatory (CTAO). While this toolklit began development with the aim to optimize a strategy for such GW+gamma joint detections with CTAO, the usefulness of the package became apparent and can be applied not only to VHE counterparts of BNS mergers, but also to other transient sources like gamma-ray bursts (GRBs), active galactic nuclei (AGN) flares, novae, supernovae, and more.
+The need for a toolkit like `sensipy` became clear while attempting to estimate the detectability of VHE counterparts to gravitational wave (GW) signals from binary neutron star mergers (BNS) with the upcoming Cherenkov Telescope Array Observatory (CTAO). During development, it became apparent that the included tools could be applied not only to VHE counterparts of BNS mergers, but also to other transient sources like gamma-ray bursts (GRBs), active galactic nuclei (AGN) flares, novae, supernovae, and more.
 
 <!-- In its third observing run, the Advanced LIGO and Advanced Virgo observatories detected gravitational waves (GWs) from the binary neutron star (BNS) merger event GW170817.
 1.7 seconds later, the Fermi and INTEGRAL observatories detected a short gamma-ray burst (GRB) in the same region of sky in the keV energy band, opening the gates to the field of multi-messenger astronomy.
@@ -78,13 +78,13 @@ Given these inputs, `sensipy` toolkit builds upon the primitives provided by `nu
 
 ## Sensitivity Curve Calculation with `sensipy.sensitivity`
 
-Sensitivity curves represent the minimum flux needed to detect a source at a given significance (usually $5 \sigma$) given an exposure time $t_{exp}$. Such curves are often used to compare the performances of different instruments, and `sensipy` can produce them in two flavors: integral and differential sensitivity curves. The sensitivity itself depends heavily on the rapidly-changing spectral shape of an event, which itself can be highly affected by distance due to the extragalactic background light (EBL). All of these factors are automatically taken into account.
+Sensitivity curves represent the minimum flux needed to detect a source at a given significance (usually $5 \sigma$) given an exposure time $t_{exp}$. Such curves are often used to compare the performances of different instruments, and `sensipy` can produce them in two flavors: integral and differential sensitivity curves. The sensitivity itself depends heavily on the rapidly-changing spectral shape of an event, which itself may be highly affected by distance due to the extragalactic background light (EBL). All of these factors are automatically taken into account.
 
 [Plot of differential and integral sensitivity curves for CTAO calculated with sensipy]
 
 ## Simulating Observations with `sensipy.source`
 
-This class addresses the fundamental question: if we begin observations with a latency of $t_L = X~\text{min}$ after an alert, what observation time is required in order to achieve a detection? In addition, the class can also determine the inverse: given an observation time, at what significance can a source be detected. Given that the user has already calculated the sensitivity curve for an event, `sensipy` can determine if the source is actually detectable, given $T_L$. When detectable, the exposure time necessary for detection is also calculated.
+This class addresses the fundamental question: if we begin observations with a latency of $t_L = X~\text{min}$ after an alert, what observation time is required in order to achieve a detection? In addition, the class can also determine the inverse: given an observation time, at what significance can a source be detected. Given that the user has already calculated the sensitivity curve for an event, `sensipy` can determine if the source is actually detectable, given $t_L$. When detectable, the exposure time necessary for detection is also calculated.
 
 ## Working with large catalogs with `sensipy.detectability`
 
