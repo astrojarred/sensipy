@@ -96,7 +96,7 @@ Tables of observation times can also be used as lookup tables (LUTs) during tele
 2. a transient alert arrives during normal telescope operation and telescopes begin observing the event position with a latency of $t_L$
 3. the LUT is filtered and interpolated in realtime in order to quickly calculate an informed estimate on the exposure time needed for a detection
 
-Such workflows based on `sensipy` modules are already being internally evaluated within the MAGIC, Large-Size Telescope (LST), and CTAO collaborations for follow-up of both GW and GRB alerts (eg @patricelli_searching_2022, @green_chasing_2024).
+Such workflows based on `sensipy` modules are already being internally evaluated within the MAGIC, Large-Size Telescope (LST), and CTAO collaborations for follow-up of both GW and GRB alerts [eg, @green_chasing_2024; @patricelli_searching_2022].
 
 ### Follow-ups of poorly localized events
 
