@@ -40,7 +40,7 @@ affiliations:
    index: 6
    ror: 01sdrjx85
 date: 02 December 2025
-# bibliography: paper.bib
+bibliography: paper.bib
 ---
 # Summary
 
@@ -52,13 +52,9 @@ The information extracted from the tools included in `sensipy` can be used to he
 
 # Statement of need
 
-The need for a toolkit like `sensipy` became clear while attempting to estimate the detectability of VHE counterparts to gravitational wave (GW) signals from binary neutron star mergers (BNS) with the upcoming Cherenkov Telescope Array Observatory (CTAO). During development, it became apparent that the included tools could be applied not only to VHE counterparts of BNS mergers, but also to other transient sources like gamma-ray bursts (GRBs), active galactic nuclei (AGN) flares, novae, supernovae, and more.
+The need for a toolkit like `sensipy` became clear while attempting to estimate the detectability of VHE counterparts to gravitational wave (GW) signals from binary neutron star mergers (BNS) with the upcoming Cherenkov Telescope Array Observatory (CTAO) [@patricelli_searching_2022; @green_chasing_2024]. During development, it became apparent that the included tools could be applied not only to VHE counterparts of BNS mergers, but also to other transient sources like gamma-ray bursts (GRBs), active galactic nuclei flares, novae, supernovae, and more.
 
-<!-- In its third observing run, the Advanced LIGO and Advanced Virgo observatories detected gravitational waves (GWs) from the binary neutron star (BNS) merger event GW170817.
-1.7 seconds later, the Fermi and INTEGRAL observatories detected a short gamma-ray burst (GRB) in the same region of sky in the keV energy band, opening the gates to the field of multi-messenger astronomy.
-In January 2019, the Fermi and Swift observatories detected a GRB and quickly alerted the community. Within one minute, the Major Atmospheric Gamma Imaging Cherenkov (MAGIC) telescopes pointed to the same position and provided the first evidence of TeV-band emission from a GRB. -->
-
-Between GW, neutrino, optical, and space-based gamma-ray experiments, thousands of low-latency alerts are sent out to the greater community each year. However, very few of these events actually result in detections in the VHE gamma-ray regime. This is due to many factors, including the rapid decay of fluxes, delay in telescope repointing, uncertainty on the sky localization of the source, and observatory duty cycles. In the face of these challenges, `sensipy` aims to help answer the following questions for gamma-ray astronomers interested in optimizing their follow-up campaigns:
+Between GW, neutrino, optical, and space-based gamma-ray experiments, thousands of low-latency alerts are sent out to the greater community each year [@abac_gwtc-40_2025; @von_kienlin_fourth_2020; @abbasi_icecat-1_2023]. However, very few of these events actually result in detections in the VHE gamma-ray regime. This is due to many factors, including the rapid decay of fluxes, delay in telescope repointing, uncertainty on the sky localization of the source, and observatory duty cycles. In the face of these challenges, `sensipy` aims to help answer the following questions for gamma-ray astronomers interested in optimizing their follow-up campaigns:
 
 - Given a theoretical emission model, what are the detection possibilities with a given instrument?
 - How much observing time is needed to detect a source given a delay in starting observations?
@@ -74,7 +70,7 @@ The two main inputs to any `sensipy` pipeline are:
 - an instrument response function (IRF), which describes how a telescope performs under specific observing conditions.
 - intrinsic time-dependent emission spectra for a source, which can be provided in either a FITS or CSV format.
 
-Given these inputs, `sensipy` toolkit builds upon the primitives provided by `numpy`, `scipy`, `astropy`, and `gammapy` to provide the following main functionalities. In addition, mock datasets are provided with working code examples, and batteries are included for easy access to publicly-available IRFs.  
+Given these inputs, the `sensipy` toolkit builds upon primitives provided by `astropy` and `gammapy` to provide the following main functionalities [@collaboration_astropy_2022; @donath_gammapy_2023]. In addition, mock datasets are provided with working code examples, and batteries are included for easy access to publicly-available IRFs, eg [@observatory_ctao_2021].  
 
 ## Sensitivity Curve Calculation with `sensipy.sensitivity`
 
@@ -100,38 +96,16 @@ Tables of observation times can also be used as lookup tables (LUTs) during tele
 2. a transient alert arrives during normal telescope operation and telescopes begin observing the event position with a latency of $t_L$
 3. the LUT is filtered and interpolated in realtime in order to quickly calculate an informed estimate on the exposure time needed for a detection
 
-Such workflows based on `sensipy` modules are already being internally evaluated within the MAGIC, Large-Size Telescope (LST), and CTAO collaborations for followup of both GW and GRB alerts.
+Such workflows based on `sensipy` modules are already being internally evaluated within the MAGIC, Large-Size Telescope (LST), and CTAO collaborations for follow-up of both GW and GRB alerts (eg @patricelli_searching_2022, @green_chasing_2024).
 
-## GW scheduling
+### Follow-ups of poorly localized events
 
-In addition, the functions included in `sensipy.followup` may be used in tandem with scheduling software like `tilepy` for poorly-localized events. These scheduling tools create an optimized list of telescope pointings on the sky, while `sensipy` is used simultaneously to optimize the exposure time needed at each new pointing. It is in this context development of `sensipy` began within the CTAO collaboration.
+In addition, the functions included in `sensipy.followup` may be used in tandem with scheduling software like `tilepy` for the realtime follow-up of poorly-localized events, including GRB, GW, and neutrino alerts [@seglar-arroyo_cross_2024]. These scheduling tools create an optimized list of telescope pointings on the sky, while `sensipy` is used simultaneously to optimize the exposure time needed at each new pointing.
 
 [Show example of a GW pointing scheduling for a well-localized event, if possible overlay pointing durations on top of each pointing]
 
-# Citations
+# AI usage disclosure
 
-Citations to entries in paper.bib should be in
-[rMarkdown](http://rmarkdown.rstudio.com/authoring_bibliographies_and_citations.html)
-format.
-
-If you want to cite a software repository URL (e.g. something on GitHub without a preferred
-citation) then you can do it with the example BibTeX entry below.
-
-For a quick reference, the following citation commands can be used:
-
-```md
-- `@author:2001`  ->  "Author et al. (2001)"
-- `[@author:2001]` -> "(Author et al., 2001)"
-- `[@author1:2001; @author2:2001]` -> "(Author1 et al., 2001; Author2 et al., 2002)"
-```
-
-# Acknowledgements
-
-We acknowledge contributions from some people
-
-# Statement on AI
-
-Let's say how we did not use generative AI to assist in the writing of this manuscript.
+AI tools (GitHub Copilot, Grammarly) were used to proofread documentation and pull requests. AI-assisted suggestions were carefully reviewed and approved by the authors of this manuscript. AI tools were not used in the writing of this manuscript.
 
 # References
-
