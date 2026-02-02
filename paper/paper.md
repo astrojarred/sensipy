@@ -16,7 +16,7 @@ authors:
     affiliation: "3, 4"
   - name: Antonio Stamerra
     orcid: 0000-0002-9430-5264
-    affiliation: "3, 5"
+    affiliation: "4, 5"
   - name: Monica Seglar-Arroyo
     orcid: 0000-0001-8654-409X
     affiliation: 6
@@ -27,12 +27,12 @@ affiliations:
  - name: Technische Universität München, 85748 Garching, Germany
    index: 2
    ror: 02kkvpp62
- - name: INAF - Osservatorio Astronomico di Roma, Via di Frascati 33, 00078, Monteporzio Catone, Italy
-   index: 3
-   ror: 02hnp4676
  - name: University of Pisa, Largo B. Pontecorvo 3, 56127 Pisa, Italy
-   index: 4
+   index: 3
    ror: 03ad39j10
+ - name: INAF - Osservatorio Astronomico di Roma, Via di Frascati 33, 00078, Monteporzio Catone, Italy
+   index: 4
+   ror: 02hnp4676
  - name: Cherenkov Telescope Array Observatory, Via Gobetti, 40129 Bologna, Italy
    index: 5
    ror: 05fb7v315
@@ -76,7 +76,7 @@ Given these inputs, the `sensipy` toolkit builds upon primitives provided by `as
 
 Sensitivity curves represent the minimum flux needed to detect a source at a given significance (usually $5 \sigma$) given an exposure time $t_{exp}$. Such curves are often used to compare the performances of different instruments, and `sensipy` can produce them in two flavors: integral and differential sensitivity curves. The sensitivity itself depends heavily on the rapidly-changing spectral shape of an event, which itself may be highly affected by distance due to the extragalactic background light (EBL). All of these factors are automatically taken into account.
 
-[Plot of differential and integral sensitivity curves for CTAO calculated with sensipy]
+![A 2-D representation of the intrinsic time-dependent VHE gamma-ray flux for an example transient event (left) and the corresponding integral flux sensitivity of CTAO for a source with this spectrum (right). The sensitivity curves are calculated for different latencies ($t_L$) after the event onset.](figures/figure1.png)
 
 ## Simulating Observations with `sensipy.source`
 
@@ -86,7 +86,7 @@ This class addresses the fundamental question: if we begin observations with a l
 
 `sensipy` can further estimate the overall detectability of entire classes of objects, given a catalog or survey of simulated events under various conditions. By performing and collating a large number of observation simulations for various events and latencies $t_L$, the toolkit can help produce visualizations which describe the optimal observing conditions for such events.
 
-[Two example heatmap plots calculated with sensipy]
+![Detectability heatmap produced with `sensipy`. Given a catalog large catalog of transient events, this `sensipy` heatmap shows what fraction are potentially detectable given a specific observation time $t_{exp}$ and latency $t_L$ since the event onset.](figures/figure2.png)
 
 ## Realtime applications with `sensipy.followup`
 
@@ -102,10 +102,10 @@ Such workflows based on `sensipy` modules are already being internally evaluated
 
 In addition, the functions included in `sensipy.followup` may be used in tandem with scheduling software like `tilepy` for the realtime follow-up of poorly-localized events, including GRB, GW, and neutrino alerts [@seglar-arroyo_cross_2024]. These scheduling tools create an optimized list of telescope pointings on the sky, while `sensipy` is used simultaneously to optimize the exposure time needed at each new pointing.
 
-[Show example of a GW pointing scheduling for a well-localized event, if possible overlay pointing durations on top of each pointing]
+![A follow-up coverage map for an example GW event (S250704ab). The ordering of pointings is calculated by `tilepy` and the optimal observing time at each pointing by `sensipy`.](figures/figure3.png)
 
 # AI usage disclosure
 
-AI tools (GitHub Copilot, Grammarly) were used to proofread documentation and pull requests. AI-assisted suggestions were carefully reviewed and approved by the authors of this manuscript. AI tools were not used in the writing of this manuscript.
+AI tools (GitHub Copilot, Grammarly) were used to proofread documentation and pull requests. These AI-assisted suggestions were carefully reviewed and approved by the authors of this manuscript. AI tools were not used in the writing of this manuscript in any capacity.
 
 # References
