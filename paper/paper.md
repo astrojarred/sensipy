@@ -86,7 +86,7 @@ This class addresses the fundamental question: if we begin observations with a l
 
 `sensipy` can further estimate the overall detectability of entire classes of objects, given a catalog or survey of simulated events under various conditions. By performing and collating a large number of observation simulations for various events and latencies $t_L$, the toolkit can help produce visualizations which describe the optimal observing conditions for such events.
 
-![Detectability heatmap produced with `sensipy`. Given a catalog large catalog of transient events, this `sensipy` heatmap shows what fraction are potentially detectable given a specific observation time $t_{exp}$ and latency $t_L$ since the event onset.](figures/figure2.png)
+![Detectability heatmap produced with `sensipy`. Given a large catalog of transient events, this `sensipy` heatmap shows what fraction are potentially detectable given a specific observation time $t_{exp}$ and latency $t_L$ since the event onset.](figures/figure2.png)
 
 ## Realtime applications with `sensipy.followup`
 
