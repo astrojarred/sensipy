@@ -45,10 +45,10 @@ bibliography: paper.bib
 # Summary
 
 We present `sensipy`, an open-source Python toolkit for simulating observations of transient astrophysical sources, particularly in the high-energy (HE, keV-GeV) and very-high-energy (VHE, GeV-TeV) gamma-ray ranges.
-The most explosive events in our universe are often short-lived, emitting the bulk of their energy in a relatively small time window.
-Due to often rapidly fading emission profiles, understanding how and when to observe these sources is crucial to both test theoretical predictions and efficiently optimize available telescope time.
+The most explosive events in our universe are often short-lived, emitting the bulk of their energy in a relatively narrow time window.
+Due to often rapidly fading emission profiles, understanding how and when to observe these sources is crucial both to test theoretical predictions and efficiently optimize available telescope time.
 
-The information extracted from the tools included in `sensipy` can be used to help astronomers investigate the detectability of sources considering different theoretical assumptions about their emission processes and mechanisms. This information can further help to justify the feasibility of proposed observations, estimate detection rates (events/year) for various classes of sources, and provide scheduling in realtime during gamma-ray and multi-messenger observational campaigns.
+The information extracted from the tools included in `sensipy` can be used to help astronomers investigate the detectability of sources considering various theoretical assumptions about their emission processes and mechanisms. This information can further help to justify the feasibility of proposed observations, estimate detection rates (events/year) for various classes of sources, and provide scheduling insight in realtime during gamma-ray and multi-messenger observational campaigns.
 
 # Statement of need
 
@@ -60,7 +60,7 @@ Between GW, neutrino, optical, and space-based gamma-ray experiments, thousands 
 - How much observing time is needed to detect a source given a delay in starting observations?
 - At what significance level is a source detectable given a certain observation time?
 - How long does a source remain detectable after the onset of emission?
-- How can intrinsic source properties (eg distance, flux), and observing conditions (eg latency, telescope pointing) affect detectability?
+- How can intrinsic source properties (eg distance, flux) and observing conditions (eg latency, telescope pointing) affect detectability?
 - How can these results for catalogs of simulated events inform follow-up strategies in realtime?
 
 # Functionality
@@ -70,7 +70,7 @@ The two main inputs to any `sensipy` pipeline are:
 - an instrument response function (IRF), which describes how a telescope performs under specific observing conditions.
 - intrinsic time-dependent emission spectra for a source, which can be provided in either a FITS or CSV format.
 
-Given these inputs, the `sensipy` toolkit builds upon primitives provided by `astropy` and `gammapy` to provide the following main functionalities [@collaboration_astropy_2022; @donath_gammapy_2023]. In addition, mock datasets are provided with working code examples, and batteries are included for easy access to publicly-available IRFs, eg [@observatory_ctao_2021].  
+Given these inputs, `sensipy` builds upon primitives provided by `astropy` and `gammapy` to provide the following main functionalities [@collaboration_astropy_2022; @donath_gammapy_2023]. In addition, mock datasets are provided with working code examples, and batteries are included for easy access to publicly-available IRFs, eg [@observatory_ctao_2021].  
 
 ## Sensitivity Curve Calculation with `sensipy.sensitivity`
 
@@ -80,7 +80,7 @@ Sensitivity curves represent the minimum flux needed to detect a source at a giv
 
 ## Simulating Observations with `sensipy.source`
 
-This class addresses the fundamental question: if we begin observations with a latency of $t_L = X~\text{min}$ after an alert, what observation time is required in order to achieve a detection? In addition, the class can also determine the inverse: given an observation time, at what significance can a source be detected. Given that the user has already calculated the sensitivity curve for an event, `sensipy` can determine if the source is actually detectable, given $t_L$. When detectable, the exposure time necessary for detection is also calculated.
+This class addresses the fundamental question: if we begin observations with a latency of $t_L = X~\text{min}$ after an alert, what observation time is required in order to achieve a detection? In addition, the class can also determine the inverse: given an observation time, at what significance can a source be detected? Given that the user has already calculated the sensitivity curve for an event, `sensipy` can determine if the source is actually detectable, given $t_L$. When detectable, the exposure time necessary for detection is also calculated.
 
 ## Working with large catalogs with `sensipy.detectability`
 
