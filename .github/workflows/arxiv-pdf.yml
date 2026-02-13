@@ -1,0 +1,38 @@
+name: Arxiv PDF
+'on':
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+      - develop
+  pull_request:
+    branches:
+      - main
+      - master
+      - develop
+
+jobs:
+  paper:
+    runs-on: ubuntu-latest
+    name: Arxiv PDF
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Build arXiv PDF
+        run: >-
+          docker run --rm --platform linux/amd64
+          -v "${{ github.workspace }}:/data"
+          pandoc/latex:latest
+          -s paper/preprint/arxiv.md
+          --from=markdown
+          --pdf-engine=xelatex
+          --citeproc
+          --resource-path=paper
+          -o paper/preprint/arxiv.pdf
+      - name: Upload
+        if: ${{ !env.ACT }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: arxiv-paper
+          path: paper/arxiv.pdf
