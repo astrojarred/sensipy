@@ -1,15 +1,3 @@
-"""Detectability analysis and visualization module.
-
-This module provides tools for analyzing and visualizing source detectability data
-from lookup tables. It supports flexible column naming, custom filtering, and
-modern plotting features for creating detectability heatmaps.
-
-Example:
-    >>> from sensipy.detectability import LookupData
-    >>> data = LookupData("lookup_table.parquet")
-    >>> data.set_filters(("irf_site", "==", "north"))
-    >>> ax = data.plot(title="North Site Detectability")
-"""
 from pathlib import Path
 from typing import Callable, Sequence, cast
 
@@ -46,7 +34,7 @@ def convert_time(seconds: float) -> str:
 class LookupData:
     """A class for reading, filtering, and visualizing detectability data from lookup tables.
 
-    This class provides a flexible interface for working with detectability data stored
+    This class allows you to work with LUTs of large simulated datasets and works with data stored
     in Parquet or CSV format. It supports custom column names, flexible filtering,
     and customizable visualization options.
 
@@ -54,11 +42,6 @@ class LookupData:
         df (pd.DataFrame): The current (filtered) data frame.
         observation_times (np.ndarray): The observation times used for calculations.
         results (pd.DataFrame): The calculated detectability results.
-
-    Example:
-        >>> data = LookupData("data.parquet", delay_column="obs_delay")
-        >>> data.set_filters(("irf_site", "==", "north"))
-        >>> data.plot(title="North Site Analysis")
     """
 
     def __init__(
@@ -77,13 +60,10 @@ class LookupData:
         Raises:
             ValueError: If file type is not supported or required columns are missing.
         """
-        # Store the absolute path to the input file.
         self._input_file = Path(input_file).absolute()
 
-        # Determine the file type from the file extension.
         self._file_type = self._input_file.suffix
 
-        # Load the data from the file.
         if self._file_type == ".parquet":
             self._data = pd.read_parquet(self._input_file)
         elif self._file_type == ".csv":
@@ -91,11 +71,9 @@ class LookupData:
         else:
             raise ValueError("File type not supported, please use .parquet or .csv")
 
-        # Store column names
         self._delay_column = delay_column
         self._obs_time_column = obs_time_column
 
-        # Validate required columns exist
         if delay_column not in self._data.columns:
             raise ValueError(
                 f"Column '{delay_column}' (delay_column) not found in data. "
@@ -239,11 +217,6 @@ class LookupData:
             TypeError: If a filter is not a tuple.
             ValueError: If operator is invalid or column doesn't exist.
 
-        Example:
-            >>> data.set_filters(
-            ...     ("irf_site", "==", "north"),
-            ...     ("irf_zenith", "<", 40)
-            ... )
         """
         self._current_data = self._data.copy()
         self._results = pd.DataFrame(
@@ -254,7 +227,9 @@ class LookupData:
             if not isinstance(a, tuple):
                 raise TypeError("Filters must be passed as tuples")
             if len(a) != 3:
-                raise ValueError("Each filter must be a tuple of (column, operator, value)")
+                raise ValueError(
+                    "Each filter must be a tuple of (column, operator, value)"
+                )
 
             column, op, value = a
 
@@ -397,7 +372,11 @@ class LookupData:
             _, ax = plt.subplots(figsize=(9, 9))
 
         # Set the colorbar options
-        cbar_label = "Percentage of sources detected" if as_percent else "Fraction of sources detected"
+        cbar_label = (
+            "Percentage of sources detected"
+            if as_percent
+            else "Fraction of sources detected"
+        )
         cbar_kws = {"label": cbar_label, "orientation": "vertical"}
 
         # Set the color scale if logarithmic scale is selected
@@ -448,8 +427,12 @@ class LookupData:
             cmap=color_scheme,
             vmin=min_value,
             vmax=max_value,
-            xticklabels=cast(Sequence[str], x_tick_labels) if x_tick_labels is not None else x_tick_labels,
-            yticklabels=cast(Sequence[str], y_tick_labels) if y_tick_labels is not None else y_tick_labels,
+            xticklabels=cast(Sequence[str], x_tick_labels)
+            if x_tick_labels is not None
+            else x_tick_labels,
+            yticklabels=cast(Sequence[str], y_tick_labels)
+            if y_tick_labels is not None
+            else y_tick_labels,
             cbar_kws=cbar_kws,
             norm=norm,
             square=not square,
@@ -466,7 +449,11 @@ class LookupData:
             plot_title = title
         elif subtitle is not None:
             # Legacy support for subtitle parameter
-            n_total = self._results.groupby("delay").total.first().iloc[0] if len(self._results) > 0 else 0
+            n_total = (
+                self._results.groupby("delay").total.first().iloc[0]
+                if len(self._results) > 0
+                else 0
+            )
             plot_title = f"Source Detectability: {subtitle} (n={n_total})"
 
         if plot_title:

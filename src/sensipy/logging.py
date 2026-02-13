@@ -3,7 +3,8 @@ import logging
 
 class logger:
     """
-    A logger for the package. Will automatically create a log file in the current working directory, and print to the console.
+    A logger for the package. Will automatically create a log file in the current working directory,
+    as well as print to the console.
 
     Attributes:
         name (str): The name of the logger.
@@ -18,14 +19,7 @@ class logger:
         error(self, message: str) -> None: Log an error message.
         critical(self, message: str) -> None: Log a critical message.
 
-    Example:
-        >>> from sensipy.logging import logger
-        >>> log = logger(name='test', filename='./sensipy.log')
-        >>> log.debug('This is a debug message')
-        >>> log.info('This is an info message')
-        >>> log.warning('This is a warning message')
-        >>> log.error('This is an error message')
-        >>> log.critical('This is a critical message')
+    NOTE on AI: This class was written with assistance from LLMs.
     """
 
     def __init__(

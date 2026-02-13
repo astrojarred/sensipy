@@ -59,8 +59,6 @@ class ScaledTemplateModel(TemplateSpectralModel):
     """
 
     def __init__(self, scaling_factor: int | float = 1e-6, *args, **kwargs):
-        # Create a real amplitude parameter with log scaling
-        # Use public API to set normalization if available; otherwise, document the use of the private attribute.
         self.amplitude = Parameter(
             "amplitude",
             scaling_factor,
@@ -152,6 +150,8 @@ def _get_model_normalization_info(
 
     Returns:
         tuple: A tuple containing the normalization value, the normalization unit, and a function to copy the model.
+
+    NOTE on AI: This function was written with assistance from LLMs.
     """
     if isinstance(spectral_model, CompoundSpectralModel):
         # For compound models, check if the first component has amplitude
@@ -223,16 +223,16 @@ class Sensitivity:
 
         Args:
             observatory (str): The observatory to use for the sensitivity calculation.
-            radius (u.Quantity): The radius of the region to calculate the sensitivity for.
-            min_energy (u.Quantity | None): The minimum energy to calculate the sensitivity for.
-            max_energy (u.Quantity | None): The maximum energy to calculate the sensitivity for.
-            irf (str | Path | dict | None): The IRF to use for the sensitivity calculation.
-            min_time (u.Quantity): The minimum time to calculate the sensitivity for.
-            max_time (u.Quantity): The maximum time to calculate the sensitivity for.
-            ebl (str | None): The EBL model to use for the sensitivity calculation.
-            n_sensitivity_points (int): The number of sensitivity points to calculate.
-            sensitivity_curve (u.Quantity | None): The sensitivity curve to use for the sensitivity calculation.
-            photon_flux_curve (u.Quantity | None): The photon flux curve to use for the sensitivity calculation.
+            radius (u.Quantity): The radius of the region
+            min_energy (u.Quantity | None): minimum energy
+            max_energy (u.Quantity | None): maximum energy
+            irf (str | Path | dict | None): IRF to use
+            min_time (u.Quantity): minimum time
+            max_time (u.Quantity): maximum time
+            ebl (str | None): EBL model to use
+            n_sensitivity_points (int): number of sensitivity points
+            sensitivity_curve (u.Quantity | None): sensitivity curve to use
+            photon_flux_curve (u.Quantity | None): photon flux curve to use
 
         Returns:
             None: The Sensitivity class is initialized.
@@ -253,7 +253,7 @@ class Sensitivity:
             if not os.environ.get("GAMMAPY_DATA"):
                 try:
                     package_data_dir = get_data_path()
-                    # Convert Path to string for environment variable
+                    # Convert Path to string and then set environment variable
                     data_path = str(package_data_dir.resolve())
                     os.environ["GAMMAPY_DATA"] = data_path
                 except Exception as e:
@@ -312,11 +312,13 @@ class Sensitivity:
         if sensitivity_curve is not None:
             self._sensitivity_curve = sensitivity_curve
             self._sensitivity_unit = sensitivity_curve[0].unit
-            self._sensitivity: scipy.interpolate.interp1d | None = scipy.interpolate.interp1d(
-                np.log10(self.times.value),
-                np.log10(self._sensitivity_curve.value),
-                kind="linear",
-                fill_value="extrapolate",
+            self._sensitivity: scipy.interpolate.interp1d | None = (
+                scipy.interpolate.interp1d(
+                    np.log10(self.times.value),
+                    np.log10(self._sensitivity_curve.value),
+                    kind="linear",
+                    fill_value="extrapolate",
+                )
             )
         else:
             self._sensitivity_curve = u.Quantity([], unit=u.Unit("erg cm-2 s-1"))
@@ -326,11 +328,13 @@ class Sensitivity:
         if photon_flux_curve is not None:
             self._photon_flux_curve = photon_flux_curve
             self._photon_flux_unit = photon_flux_curve[0].unit
-            self._photon_flux: scipy.interpolate.interp1d | None = scipy.interpolate.interp1d(
-                np.log10(self.times.value),
-                np.log10(self._photon_flux_curve.value),
-                kind="linear",
-                fill_value="extrapolate",
+            self._photon_flux: scipy.interpolate.interp1d | None = (
+                scipy.interpolate.interp1d(
+                    np.log10(self.times.value),
+                    np.log10(self._photon_flux_curve.value),
+                    kind="linear",
+                    fill_value="extrapolate",
+                )
             )
         else:
             self._photon_flux_curve = u.Quantity([], unit=u.Unit("cm-2 s-1"))
@@ -395,7 +399,9 @@ class Sensitivity:
 
         if mode == "sensitivity":
             if not self._sensitivity:
-                raise ValueError("Sensitivity curve not yet calculated for this source.")
+                raise ValueError(
+                    "Sensitivity curve not yet calculated for this source."
+                )
             log_sensitivity = self._sensitivity(log_t)
             return 10**log_sensitivity * self._sensitivity_unit
 
@@ -464,7 +470,9 @@ class Sensitivity:
                         amplitude=starting_amplitude,
                         reference=reference,
                     ),
-                    redshift=source.distance.z if hasattr(source, 'distance') and source.distance is not None else 0,
+                    redshift=source.distance.z
+                    if hasattr(source, "distance") and source.distance is not None
+                    else 0,
                     sensitivity_type="integral",
                     offset=offset,
                     n_bins=n_bins,
@@ -474,7 +482,9 @@ class Sensitivity:
                 s = self.get_sensitivity_from_model(
                     t=t,
                     spectral_model=source.get_template_spectrum(t),
-                    redshift=source.distance.z if hasattr(source, 'distance') and source.distance is not None else 0,
+                    redshift=source.distance.z
+                    if hasattr(source, "distance") and source.distance is not None
+                    else 0,
                     sensitivity_type="integral",
                     offset=offset,
                     n_bins=n_bins,
@@ -626,23 +636,23 @@ class Sensitivity:
         acceptance_off: float = 3,
         random_state="random-seed",
     ) -> SpectrumDatasetOnOff:
-        """Simulate a spectrum for a given IRF, observatory, duration, radius, min_energy, max_energy, spectral_model, source_ra, source_dec, n_bins, offset, acceptance, acceptance_off, and random_state.
+        """Simulate a spectrum for a given IRF.
 
         Args:
-            irf (str | Path): The IRF to simulate the spectrum for.
-            observatory (str): The observatory to simulate the spectrum for.
-            duration (u.Quantity): The duration of the observation.
-            radius (u.Quantity): The radius of the region to simulate the spectrum for.
-            min_energy (u.Quantity): The minimum energy to simulate the spectrum for.
-            max_energy (u.Quantity): The maximum energy to simulate the spectrum for.
-            spectral_model (SpectralModel): The spectral model to simulate the spectrum for.
-            source_ra (u.Quantity): The right ascension of the source.
-            source_dec (u.Quantity): The declination of the source.
-            n_bins (int | None): The number of bins to use for the spectrum simulation.
-            offset (u.Quantity): The offset to use for the spectrum simulation.
-            acceptance (float): The acceptance to use for the spectrum simulation.
-            acceptance_off (float): The acceptance off to use for the spectrum simulation.
-            random_state (str): The random state to use for the spectrum simulation.
+            irf (str | Path): IRF to use in the simulation
+            observatory (str): The observatory to use in the simulation
+            duration (u.Quantity): duration of the observation
+            radius (u.Quantity): radius of the region
+            min_energy (u.Quantity): minimum energy
+            max_energy (u.Quantity): maximum energy
+            spectral_model (SpectralModel): spectral model to use in the simulation
+            source_ra (u.Quantity): right ascension of the source
+            source_dec (u.Quantity): declination of the source
+            n_bins (int | None): number of bins in energy
+            offset (u.Quantity): offset in angle
+            acceptance (float): acceptance
+            acceptance_off (float): acceptance off
+            random_state (str): random state
 
         Returns:
             SpectrumDatasetOnOff: The simulated spectrum as a gammapy SpectrumDatasetOnOff object.
