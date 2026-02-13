@@ -1,10 +1,3 @@
-"""Source class for loading and analyzing time-energy spectra of astrophysical events.
-
-This module provides functionality for reading spectral data from various file formats
-(FITS, CSV, text), interpolating spectra, fitting spectral indices, and determining
-source visibility and significance for gamma-ray observations.
-"""
-
 import math
 import os
 import re
@@ -14,6 +7,7 @@ from typing import Any, Literal
 
 import astropy.units as u
 import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 import numpy as np
 import pandas as pd
 from astropy.coordinates import Distance
@@ -902,7 +896,7 @@ class Source:
         resolution=100,
         return_plot=False,
         cutoff_flux=1e-20 * u.Unit("1 / (cm2 s GeV)"),
-    ):
+    ) -> Figure | None:
         """Display a 2D visualization of the spectral pattern as a function of time and energy.
 
         Creates a heatmap showing the log of the differential flux across the time-energy
@@ -915,9 +909,14 @@ class Source:
             cutoff_flux: Minimum flux value to display; values below this are set to the cutoff.
 
         Returns:
-            matplotlib.pyplot if return_plot is True, otherwise None.
+            matplotlib Figure object if return_plot is True, otherwise None.
         """
         self.set_spectral_grid()
+        
+        if self.energy is None:
+            raise ValueError("Energy not set. Please load in the data first.")
+        if self.time is None:
+            raise ValueError("Time not set. Please load in the data first.")
 
         loge = np.log10(self.energy.value)
         logt = np.log10(self.time.value)
@@ -929,6 +928,9 @@ class Source:
         for e in x:
             for t in y:
                 points.append([e, t])
+                
+        if self.SpectralGrid is None:
+            raise ValueError("Spectral grid not set. Please call `set_spectral_grid()` first.")
 
         spectrum = self.SpectralGrid(points)
         # set everything below the cutoff energy to cutoff_energy
@@ -946,7 +948,9 @@ class Source:
         plt.colorbar(label="Log dN/dE [cm-2 s-1 GeV-1]")
 
         if return_plot:
-            return plt
+            return plt.gcf()   
+        
+        return
 
     def get_spectrum(
         self, time: u.Quantity, energy: u.Quantity | None = None
