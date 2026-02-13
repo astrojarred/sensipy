@@ -89,12 +89,12 @@
   \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
 \AtBeginDocument{\author{\parbox{\textwidth}{\centering
 Jarred G. Green\textsuperscript{1,2}, Barbara Patricelli\textsuperscript{3,4}, Antonio Stamerra\textsuperscript{4,5}, Monica Seglar-Arroyo\textsuperscript{6}\\[0.5em]
-\footnotesize\textsuperscript{1}~Max-Planck-Institut für Physik, Garching, Germany\\
-\footnotesize\textsuperscript{2}~Technische Universität München, Germany\\
+\footnotesize\textsuperscript{1}~Max-Planck-Institut f\"ur Physik, Garching, Germany\\
+\footnotesize\textsuperscript{2}~Technische Universit\"at M\"unchen, Germany\\
 \footnotesize\textsuperscript{3}~University of Pisa, Italy\\
 \footnotesize\textsuperscript{4}~INAF - Osservatorio Astronomico di Roma, Italy\\
 \footnotesize\textsuperscript{5}~Cherenkov Telescope Array Observatory, Bologna, Italy\\
-\footnotesize\textsuperscript{6}~Institut de Fisica d'Altes Energies (IFAE), Bellaterra (Barcelona), Spain}}}
+\footnotesize\textsuperscript{6}~Institut de F\'isica d'Altes Energies (IFAE), Bellaterra (Barcelona), Spain}}}
 \usepackage{bookmark}
 \IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
 \urlstyle{same}
@@ -169,8 +169,9 @@ follow-up campaigns:
 \item
   How long does a source remain detectable after the onset of emission?
 \item
-  How can intrinsic source properties (eg distance, flux) and observing
-  conditions (eg latency, telescope pointing) affect detectability?
+  How can intrinsic source properties (e.g.~distance, flux) and
+  observing conditions (e.g.~latency, telescope pointing) affect
+  detectability?
 \item
   How can these results for catalogs of simulated events inform
   follow-up strategies in realtime?
@@ -195,7 +196,7 @@ Given these inputs, \texttt{sensipy} builds upon primitives provided by
 functionalities (The Astropy and Price-Whelan Collaboration et al. 2022;
 Donath et al. 2023). In addition, mock datasets are provided with
 working code examples, and batteries are included for easy access to
-publicly-available IRFs, eg (Cherenkov Telescope Array Observatory and
+publicly-available IRFs, e.g. (Cherenkov Telescope Array Observatory and
 Consortium 2021).
 
 \subsection{\texorpdfstring{Sensitivity Curve Calculation with
@@ -279,7 +280,7 @@ For example, the following workflow can be implemented within
 
 Such workflows based on \texttt{sensipy} modules are already being
 internally evaluated within the MAGIC, Large-Size Telescope (LST), and
-CTAO collaborations for follow-up of both GW and GRB alerts (eg, Green
+CTAO collaborations for follow-up of both GW and GRB alerts (e.g., Green
 et al. 2024; Patricelli et al. 2022).
 
 \subsubsection{Follow-ups of poorly localized
@@ -305,9 +306,12 @@ the optimal observing time at each pointing by
 \section{AI usage disclosure}\label{ai-usage-disclosure}
 
 AI tools (GitHub Copilot, Grammarly) were used to proofread
-documentation and pull requests. These AI-assisted suggestions were
-carefully reviewed and approved by the authors of this manuscript. AI
-tools were not used in the writing of this manuscript in any capacity.
+documentation and pull requests as well as scaffold tests. Instances
+where functions or classes were primarily generated with assistance from
+GitHub Copilot (auto model) are explicitly marked in the Python
+docstrings. All AI-assisted suggestions were carefully reviewed and
+approved by the authors of this manuscript. AI tools were not used in
+the writing of this manuscript in any capacity.
 
 \section*{References}\label{references}
 \addcontentsline{toc}{section}{References}
