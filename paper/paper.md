@@ -106,6 +106,6 @@ In addition, the functions included in `sensipy.followup` may be used in tandem 
 
 # AI usage disclosure
 
-AI tools (GitHub Copilot, Grammarly) were used to proofread documentation and pull requests. These AI-assisted suggestions were carefully reviewed and approved by the authors of this manuscript. AI tools were not used in the writing of this manuscript in any capacity.
+AI tools (GitHub Copilot, Grammarly) were used to proofread documentation and pull requests as well as scaffold tests. Instances where functions or classes were primary generated with assistance from GitHub Copilot (auto model) are explicitly marked in the Python docstrings. All AI-assisted suggestions were carefully reviewed and approved by the authors of this manuscript. AI tools were not used in the writing of this manuscript in any capacity.
 
 # References
