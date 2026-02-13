@@ -36,7 +36,7 @@ affiliations:
  - name: Cherenkov Telescope Array Observatory, Via Gobetti, 40129 Bologna, Italy
    index: 5
    ror: 05fb7v315
- - name: Institut de Fisica d’Altes Energies (IFAE), The Barcelona Institute of Science and Technology, Campus UAB, 08193 Bellaterra (Barcelona), Spain
+ - name: Institut de Física d’Altes Energies (IFAE), The Barcelona Institute of Science and Technology, Campus UAB, 08193 Bellaterra (Barcelona), Spain
    index: 6
    ror: 01sdrjx85
 date: 02 December 2025
