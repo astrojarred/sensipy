@@ -912,6 +912,11 @@ class Source:
             matplotlib Figure object if return_plot is True, otherwise None.
         """
         self.set_spectral_grid()
+        
+        if self.energy is None:
+            raise ValueError("Energy not set. Please load in the data first.")
+        if self.time is None:
+            raise ValueError("Time not set. Please load in the data first.")
 
         loge = np.log10(self.energy.value)
         logt = np.log10(self.time.value)
@@ -923,6 +928,9 @@ class Source:
         for e in x:
             for t in y:
                 points.append([e, t])
+                
+        if self.SpectralGrid is None:
+            raise ValueError("Spectral grid not set. Please call `set_spectral_grid()` first.")
 
         spectrum = self.SpectralGrid(points)
         # set everything below the cutoff energy to cutoff_energy
@@ -941,6 +949,8 @@ class Source:
 
         if return_plot:
             return plt.gcf()   
+        
+        return
 
     def get_spectrum(
         self, time: u.Quantity, energy: u.Quantity | None = None
