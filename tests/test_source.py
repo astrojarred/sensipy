@@ -778,11 +778,6 @@ def test_source_read_txt_missing_files(tmp_path):
     with pytest.raises(ValueError, match="No supported files"):
         Source(source_dir)
 
-
-# ============================================================================
-# Visualization Tests
-# ============================================================================
-
 def test_source_show_spectral_pattern(mock_csv_path):
     """Test show_spectral_pattern method."""
     source = Source(mock_csv_path)
@@ -794,7 +789,7 @@ def test_source_show_spectral_pattern(mock_csv_path):
     # Test with return_plot=True - returns matplotlib.pyplot module
     import matplotlib.pyplot as plt
     result = source.show_spectral_pattern(return_plot=True)
-    assert result is plt
+    assert isinstance(result, plt.Figure)
     plt.close('all')  # Close any figures created
 
 
