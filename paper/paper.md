@@ -60,7 +60,7 @@ Between GW, neutrino, optical, and space-based gamma-ray experiments, thousands 
 - How much observing time is needed to detect a source given a delay in starting observations?
 - At what significance level is a source detectable given a certain observation time?
 - How long does a source remain detectable after the onset of emission?
-- How can intrinsic source properties (eg distance, flux) and observing conditions (eg latency, telescope pointing) affect detectability?
+- How can intrinsic source properties (e.g. distance, flux) and observing conditions (e.g. latency, telescope pointing) affect detectability?
 - How can these results for catalogs of simulated events inform follow-up strategies in realtime?
 
 # Functionality
@@ -70,7 +70,7 @@ The two main inputs to any `sensipy` pipeline are:
 - an instrument response function (IRF), which describes how a telescope performs under specific observing conditions.
 - intrinsic time-dependent emission spectra for a source, which can be provided in either a FITS or CSV format.
 
-Given these inputs, `sensipy` builds upon primitives provided by `astropy` and `gammapy` to provide the following main functionalities [@collaboration_astropy_2022; @donath_gammapy_2023]. In addition, mock datasets are provided with working code examples, and batteries are included for easy access to publicly-available IRFs, eg [@observatory_ctao_2021].  
+Given these inputs, `sensipy` builds upon primitives provided by `astropy` and `gammapy` to provide the following main functionalities [@collaboration_astropy_2022; @donath_gammapy_2023]. In addition, mock datasets are provided with working code examples, and batteries are included for easy access to publicly-available IRFs, e.g. [@observatory_ctao_2021].  
 
 ## Sensitivity Curve Calculation with `sensipy.sensitivity`
 
@@ -96,7 +96,7 @@ Tables of observation times can also be used as lookup tables (LUTs) during tele
 2. a transient alert arrives during normal telescope operation and telescopes begin observing the event position with a latency of $t_L$
 3. the LUT is filtered and interpolated in realtime in order to quickly calculate an informed estimate on the exposure time needed for a detection
 
-Such workflows based on `sensipy` modules are already being internally evaluated within the MAGIC, Large-Size Telescope (LST), and CTAO collaborations for follow-up of both GW and GRB alerts [eg, @green_chasing_2024; @patricelli_searching_2022].
+Such workflows based on `sensipy` modules are already being internally evaluated within the MAGIC, Large-Size Telescope (LST), and CTAO collaborations for follow-up of both GW and GRB alerts [e.g., @green_chasing_2024; @patricelli_searching_2022].
 
 ### Follow-ups of poorly localized events
 
