@@ -52,18 +52,7 @@ export default defineConfig({
             {label: "Followup Analysis", slug: "working_with_sensipy/followups"},
             {label: "Detectability Analysis", slug: "working_with_sensipy/detectability"},
           ],
-        },
-        {
-          label: "API Reference",
-          items: [
-            {label: "Overview", slug: "reference"},
-            {label: "source", slug: "reference/source"},
-            {label: "sensitivity", slug: "reference/sensitivity"},
-            {label: "followup", slug: "reference/followup"},
-            {label: "ctaoirf", slug: "reference/ctaoirf"},
-            {label: "detectability", slug: "reference/detectability"},
-          ],
-        },
+        }
       ],
     }),
   ],
