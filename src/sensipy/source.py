@@ -30,74 +30,79 @@ log = logger(__name__)
 
 class _SpectralModelWrapper:
     """Wrapper class for gammapy SpectralModel objects that automatically sets energy range in plot().
-    
+
     This wrapper overrides the plot() method to automatically use the source's min_energy
     and max_energy as the energy range, while forwarding all other attributes and methods
     to the wrapped model.
     """
-    
+
     def __init__(self, model, source):
         """Initialize the wrapper.
-        
+
         Args:
             model: The gammapy SpectralModel instance to wrap.
             source: The Source instance that provides min_energy and max_energy.
         """
         self._model = model
         self._source = source
-    
+
     def __getattribute__(self, name):
         """Override __getattribute__ to make isinstance checks work with __class__."""
         if name == "__class__":
             # Return the wrapped model's class for isinstance checks
             return type(object.__getattribute__(self, "_model"))
         return object.__getattribute__(self, name)
-    
+
     def plot(self, energy_range=None, **kwargs):
         """Plot the spectral model with automatic energy range.
-        
+
         If energy_range is not provided, automatically uses the source's min_energy
         and max_energy. The first positional argument can also be a tuple of
         (min_energy, max_energy).
-        
+
         Args:
             energy_range: Optional energy range tuple (min_energy, max_energy).
                 If None, uses source.min_energy and source.max_energy.
             **kwargs: Additional arguments passed to the wrapped model's plot() method.
-        
+
         Returns:
             The result of the wrapped model's plot() method.
         """
         if energy_range is None:
-            if self._source.min_energy is not None and self._source.max_energy is not None:
+            if (
+                self._source.min_energy is not None
+                and self._source.max_energy is not None
+            ):
                 energy_range = (self._source.min_energy, self._source.max_energy)
-        
+
         # Call plot with energy_range as first positional argument if provided
         if energy_range is not None:
             return self._model.plot(energy_range, **kwargs)
         else:
             return self._model.plot(**kwargs)
-    
+
     def __call__(self, *args, **kwargs):
         """Make the wrapper callable like the wrapped model."""
         return self._model(*args, **kwargs)
-    
+
     def __getattr__(self, name):
         """Forward all other attributes and methods to the wrapped model."""
         return getattr(self._model, name)
-    
+
     def __mul__(self, other):
         """Support multiplication (e.g., for EBL absorption)."""
         from gammapy.modeling.models import SpectralModel
+
         result = self._model * other
         # Return a new wrapper if the result is still a SpectralModel
         if isinstance(result, SpectralModel):
             return _SpectralModelWrapper(result, self._source)
         return result
-    
+
     def __rmul__(self, other):
         """Support right multiplication."""
         from gammapy.modeling.models import SpectralModel
+
         result = other * self._model
         if isinstance(result, SpectralModel):
             return _SpectralModelWrapper(result, self._source)
@@ -159,7 +164,7 @@ class Source:
         # Validate mutual exclusivity of distance and z
         if distance is not None and z is not None:
             raise ValueError("Only one of 'distance' or 'z' can be provided, not both.")
-        
+
         if isinstance(min_energy, u.Quantity):
             min_energy = min_energy.to("GeV")
         if isinstance(max_energy, u.Quantity):
@@ -256,17 +261,21 @@ class Source:
             self.ebl = None
             self.ebl_model = None
 
-        event_id = self._metadata.get("id") or self._metadata.get("event_id") or "unknown"
+        event_id = (
+            self._metadata.get("id") or self._metadata.get("event_id") or "unknown"
+        )
         log.debug(f"Loaded event {event_id}º")
 
     def __repr__(self):
         """Return a string representation of the Source instance."""
-        event_id = self._metadata.get("id") or self._metadata.get("event_id") or "unknown"
+        event_id = (
+            self._metadata.get("id") or self._metadata.get("event_id") or "unknown"
+        )
         return f"<Source(id={event_id})>"
 
     def __getattr__(self, name: str):
         """Allow attribute access to any key in the metadata dictionary.
-        
+
         Any attribute name that exists as a key in _metadata can be accessed
         via attribute notation (e.g., source.my_custom_key).
         """
@@ -274,40 +283,62 @@ class Source:
         try:
             metadata = object.__getattribute__(self, "_metadata")
         except AttributeError:
-            raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
-        
+            raise AttributeError(
+                f"'{self.__class__.__name__}' object has no attribute '{name}'"
+            )
+
         # Check if the attribute name exists as a key in metadata
         if name in metadata:
             return metadata[name]
-        
-        raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+
+        raise AttributeError(
+            f"'{self.__class__.__name__}' object has no attribute '{name}'"
+        )
 
     def __setattr__(self, name: str, value):
         """Store non-class attributes in the metadata dictionary.
-        
+
         Any attribute that is not a regular class attribute (like time, energy, etc.)
         will be stored in the _metadata dictionary and can be accessed via attribute notation.
         """
         # List of regular class attributes that should NOT go into metadata
         # These are set during initialization and are actual class attributes
         regular_attrs = {
-            "_metadata", "filepath", "min_energy", "max_energy", "seen", "obs_time",
-            "start_time", "end_time", "error_message", "file_type", "input_times",
-            "time", "energy", "spectra", "SpectralGrid", "ebl", "ebl_model",
-            "_indices", "_amplitudes", "_index_times", "_bad_index_times",
-            "index_at", "amplitude_at"
+            "_metadata",
+            "filepath",
+            "min_energy",
+            "max_energy",
+            "seen",
+            "obs_time",
+            "start_time",
+            "end_time",
+            "error_message",
+            "file_type",
+            "input_times",
+            "time",
+            "energy",
+            "spectra",
+            "SpectralGrid",
+            "ebl",
+            "ebl_model",
+            "_indices",
+            "_amplitudes",
+            "_index_times",
+            "_bad_index_times",
+            "index_at",
+            "amplitude_at",
         }
-        
+
         # If setting _metadata itself, use normal attribute setting
         if name == "_metadata":
             super().__setattr__(name, value)
             return
-        
+
         # If this is a regular class attribute, use normal setting
         if name in regular_attrs:
             super().__setattr__(name, value)
             return
-        
+
         # Check if this attribute already exists as a regular attribute
         # Use object.__getattribute__ to avoid triggering __getattr__
         try:
@@ -324,7 +355,7 @@ class Source:
                 # We're in __init__ before _metadata is set, store normally
                 super().__setattr__(name, value)
                 return
-            
+
             # _metadata exists, so store in metadata dictionary
             metadata = object.__getattribute__(self, "_metadata")
             metadata[name] = value
@@ -350,40 +381,74 @@ class Source:
             - self.time: 1D array of time values (astropy Quantity, units of seconds)
             - self.energy: 1D array of energy values (astropy Quantity, units of GeV)
             - self.spectra: 2D array of flux values (shape: [n_energy, n_time],
-              units of cm⁻² s⁻¹ GeV⁻¹)
+                units of cm⁻² s⁻¹ GeV⁻¹)
             - Metadata attributes (long, lat, eiso, dist, angle, fluence) if present
         """
         with fits.open(self.filepath) as hdu_list:
             # Read header fields and add to metadata (user-defined keys)
             # FITS header format: header["KEY"] = (value, "slug [unit]")
             # Example: header["LAT"] = (1.0, "latitude [rad]") -> metadata["latitude"] = 1.0 * u.Unit("rad")
-            
+
             # Standard FITS keywords to skip
             standard_fits_keys = {
-                "SIMPLE", "BITPIX", "NAXIS", "NAXIS1", "NAXIS2", "NAXIS3", "NAXIS4",
-                "EXTEND", "BSCALE", "BZERO", "BLANK", "BUNIT", "DATAMAX", "DATAMIN",
-                "DATE", "DATE-OBS", "DATE-BEG", "DATE-END", "MJD", "MJD-OBS",
-                "ORIGIN", "TELESCOP", "INSTRUME", "OBSERVER", "OBJECT", "OBSID",
-                "EQUINOX", "RADECSYS", "CTYPE1", "CTYPE2", "CRVAL1", "CRVAL2",
-                "CRPIX1", "CRPIX2", "CDELT1", "CDELT2", "CUNIT1", "CUNIT2",
+                "SIMPLE",
+                "BITPIX",
+                "NAXIS",
+                "NAXIS1",
+                "NAXIS2",
+                "NAXIS3",
+                "NAXIS4",
+                "EXTEND",
+                "BSCALE",
+                "BZERO",
+                "BLANK",
+                "BUNIT",
+                "DATAMAX",
+                "DATAMIN",
+                "DATE",
+                "DATE-OBS",
+                "DATE-BEG",
+                "DATE-END",
+                "MJD",
+                "MJD-OBS",
+                "ORIGIN",
+                "TELESCOP",
+                "INSTRUME",
+                "OBSERVER",
+                "OBJECT",
+                "OBSID",
+                "EQUINOX",
+                "RADECSYS",
+                "CTYPE1",
+                "CTYPE2",
+                "CRVAL1",
+                "CRVAL2",
+                "CRPIX1",
+                "CRPIX2",
+                "CDELT1",
+                "CDELT2",
+                "CUNIT1",
+                "CUNIT2",
             }
-            
+
             header = hdu_list[0].header
-            
+
             for header_key in header.keys():
                 # Skip standard FITS keywords and comment/history cards
-                if (header_key in standard_fits_keys or 
-                    header_key.startswith("COMMENT") or 
-                    header_key.startswith("HISTORY") or
-                    header_key.startswith("TTYPE") or
-                    header_key.startswith("TFORM") or
-                    header_key.startswith("TUNIT") or
-                    header_key.startswith("TSCAL") or
-                    header_key.startswith("TZERO") or
-                    header_key.startswith("TNULL") or
-                    header_key.startswith("TDISP")):
+                if (
+                    header_key in standard_fits_keys
+                    or header_key.startswith("COMMENT")
+                    or header_key.startswith("HISTORY")
+                    or header_key.startswith("TTYPE")
+                    or header_key.startswith("TFORM")
+                    or header_key.startswith("TUNIT")
+                    or header_key.startswith("TSCAL")
+                    or header_key.startswith("TZERO")
+                    or header_key.startswith("TNULL")
+                    or header_key.startswith("TDISP")
+                ):
                     continue
-                
+
                 try:
                     # Get value and comment from FITS header
                     # Format: header["KEY"] = (value, "slug [unit]")
@@ -393,36 +458,40 @@ class Source:
                         comment = header.comments[header_key].strip()
                     except (KeyError, AttributeError):
                         comment = ""
-                    
+
                     # Skip if value is empty string
                     if value == "" or (isinstance(value, str) and value.strip() == ""):
                         continue
-                    
+
                     if comment:
                         # Parse comment to extract slug and unit
                         # Format: "slug [unit]" or just "slug"
                         # Try to extract unit from brackets: "slug [unit]"
-                        unit_match = re.search(r'\[([^\]]+)\]', comment)
+                        unit_match = re.search(r"\[([^\]]+)\]", comment)
                         if unit_match:
                             unit_str = unit_match.group(1).strip()
                             # Extract slug (everything before the bracket)
-                            slug_match = re.match(r'^(.+?)\s*\[', comment)
-                            slug = slug_match.group(1).strip().lower() if slug_match else comment.split('[')[0].strip().lower()
+                            slug_match = re.match(r"^(.+?)\s*\[", comment)
+                            slug = (
+                                slug_match.group(1).strip().lower()
+                                if slug_match
+                                else comment.split("[")[0].strip().lower()
+                            )
                         else:
                             # No unit specified, use the comment as slug
                             slug = comment.lower()
                             unit_str = None
-                        
+
                         # Convert slug to a valid Python identifier (replace spaces/special chars with underscores)
-                        slug = re.sub(r'[^\w]+', '_', slug).strip('_')
-                        
+                        slug = re.sub(r"[^\w]+", "_", slug).strip("_")
+
                         if not slug:  # Skip if slug is empty
                             continue
                     else:
                         # No comment, use header key name as slug (lowercase)
                         slug = header_key.lower()
                         unit_str = None
-                    
+
                     # Convert value to appropriate type
                     if unit_str:
                         # Special handling for distance
@@ -442,10 +511,12 @@ class Source:
                                 parsed_value = float(value)
                             except (ValueError, TypeError):
                                 parsed_value = str(value)
-                    
+
                     self._metadata[slug] = parsed_value
-                    log.debug(f"Loaded metadata '{slug}' = {parsed_value} from FITS header '{header_key}'")
-                
+                    log.debug(
+                        f"Loaded metadata '{slug}' = {parsed_value} from FITS header '{header_key}'"
+                    )
+
                 except Exception as e:
                     log.debug(f"Could not parse header key '{header_key}': {e}")
                     continue
@@ -705,18 +776,24 @@ class Source:
                         value = param_data["value"]
                         # Convert unit to string and strip, handling various pandas types
                         unit_raw = param_data.get("unit", "")
-                        unit_str = str(unit_raw).strip() if unit_raw is not None and pd.notna(unit_raw) else ""
-                        
+                        unit_str = (
+                            str(unit_raw).strip()
+                            if unit_raw is not None and pd.notna(unit_raw)
+                            else ""
+                        )
+
                         # Convert value to string first for safe parsing
                         value_str = str(value) if pd.notna(value) else ""
-                        
+
                         # Try to parse the value based on whether it has units
                         if unit_str:
                             # Has units - try to create Quantity or Distance
                             if param_name.lower() == "distance":
                                 # Special handling for distance (can be Distance object)
                                 try:
-                                    parsed_value = Distance(float(value_str), unit=unit_str)
+                                    parsed_value = Distance(
+                                        float(value_str), unit=unit_str
+                                    )
                                 except Exception:
                                     # Fallback to Quantity if Distance fails
                                     parsed_value = float(value_str) * u.Unit(unit_str)
@@ -734,7 +811,7 @@ class Source:
                                 except (ValueError, TypeError):
                                     # Keep as string
                                     parsed_value = value_str
-                        
+
                         # Store in metadata using the parameter name as the key
                         self._metadata[param_name] = parsed_value
                         log.debug(f"Set metadata '{param_name}' to {parsed_value}")
@@ -770,7 +847,9 @@ class Source:
         if not isinstance(self.max_energy, u.Quantity):
             self.max_energy = self.energy.max()
 
-    def set_ebl_model(self, ebl: str | None, z: float | None = None, distance: Distance | None = None) -> bool:
+    def set_ebl_model(
+        self, ebl: str | None, z: float | None = None, distance: Distance | None = None
+    ) -> bool:
         """Set or update the EBL absorption model and optionally the source distance or redshift.
 
         Configures the extragalactic background light (EBL) absorption model for the source.
@@ -799,7 +878,7 @@ class Source:
         # Validate mutual exclusivity of distance and z
         if distance is not None and z is not None:
             raise ValueError("Only one of 'distance' or 'z' can be provided, not both.")
-        
+
         distance_changed = False
 
         # Update distance if provided
@@ -837,7 +916,7 @@ class Source:
                 raise ValueError(
                     f"ebl must be one of {list(EBL_DATA_BUILTIN.keys())}, got {ebl}"
                 )
-            
+
             # Set GAMMAPY_DATA to package data directory if not already set
             if not os.environ.get("GAMMAPY_DATA"):
                 try:
@@ -845,7 +924,9 @@ class Source:
                     # Convert Path to string for environment variable
                     data_path = str(package_data_dir.resolve())
                     os.environ["GAMMAPY_DATA"] = data_path
-                    log.debug(f"Set GAMMAPY_DATA to package data directory: {data_path}")
+                    log.debug(
+                        f"Set GAMMAPY_DATA to package data directory: {data_path}"
+                    )
                 except Exception as e:
                     raise ValueError(
                         "GAMMAPY_DATA environment variable not set and could not "
@@ -912,7 +993,7 @@ class Source:
             matplotlib Figure object if return_plot is True, otherwise None.
         """
         self.set_spectral_grid()
-        
+
         if self.energy is None:
             raise ValueError("Energy not set. Please load in the data first.")
         if self.time is None:
@@ -928,9 +1009,11 @@ class Source:
         for e in x:
             for t in y:
                 points.append([e, t])
-                
+
         if self.SpectralGrid is None:
-            raise ValueError("Spectral grid not set. Please call `set_spectral_grid()` first.")
+            raise ValueError(
+                "Spectral grid not set. Please call `set_spectral_grid()` first."
+            )
 
         spectrum = self.SpectralGrid(points)
         # set everything below the cutoff energy to cutoff_energy
@@ -948,8 +1031,9 @@ class Source:
         plt.colorbar(label="Log dN/dE [cm-2 s-1 GeV-1]")
 
         if return_plot:
-            return plt.gcf()   
-        
+            return plt.gcf()
+
+        plt.show()
         return
 
     def get_spectrum(
@@ -1088,7 +1172,7 @@ class Source:
         # Default to True if EBL model is set, otherwise False
         if use_ebl is None:
             use_ebl = self.ebl is not None
-        
+
         model = PowerLawSpectralModel(
             index=-self.get_spectral_index(time),
             amplitude=self.get_flux(energy=reference, time=time).to("cm-2 s-1 TeV-1")
@@ -1096,7 +1180,7 @@ class Source:
             else amplitude,
             reference=reference,
         )
-        
+
         # Apply EBL absorption if requested
         if use_ebl:
             if self.ebl is not None:
@@ -1118,11 +1202,16 @@ class Source:
                     log.warning(
                         "EBL requested but no distance/redshift available. Returning model without EBL absorption."
                     )
-        
+
         # Return wrapped model for automatic energy range in plot()
         return _SpectralModelWrapper(model, self)
 
-    def get_template_spectrum(self, time: u.Quantity, scaling_factor: int | float = 1, use_ebl: bool | None = None):
+    def get_template_spectrum(
+        self,
+        time: u.Quantity,
+        scaling_factor: int | float = 1,
+        use_ebl: bool | None = None,
+    ):
         """Create a template spectral model from the spectrum at a given time.
 
         Extracts the full energy spectrum at the specified time and wraps it in a
@@ -1145,12 +1234,12 @@ class Source:
         # Default to True if EBL model is set, otherwise False
         if use_ebl is None:
             use_ebl = self.ebl is not None
-        
+
         dNdE = self.get_spectrum(time)
         model = ScaledTemplateModel(
             energy=self.energy, values=dNdE, scaling_factor=scaling_factor
         )
-        
+
         # Apply EBL absorption if requested
         if use_ebl:
             if self.ebl is not None:
@@ -1172,7 +1261,7 @@ class Source:
                     log.warning(
                         "EBL requested but no distance/redshift available. Returning model without EBL absorption."
                     )
-        
+
         # Return wrapped model for automatic energy range in plot()
         return _SpectralModelWrapper(model, self)
 
@@ -1282,7 +1371,9 @@ class Source:
             "cm-2 s-1 GeV-1"
         )
 
-    def show_spectral_evolution(self, resolution=100, return_plot=False):
+    def show_spectral_evolution(
+        self, resolution=100, return_plot=False
+    ) -> Figure | None:
         """Plot the evolution of the spectral index over time.
 
         Creates a plot showing how the power-law spectral index changes as a function
@@ -1293,9 +1384,12 @@ class Source:
             return_plot: If True, return the matplotlib figure instead of displaying it.
 
         Returns:
-            matplotlib.pyplot if return_plot is True, otherwise None.
+            matplotlib.pyplot.Figure if return_plot is True, otherwise None.
         """
         self.fit_spectral_indices()
+        
+        if self.time is None:
+            raise ValueError("Time not set. Please load in the data first.")
 
         t = np.linspace(
             np.log10(min(self.time).value),
@@ -1308,9 +1402,11 @@ class Source:
         plt.ylabel("Spectral Index")
 
         if return_plot:
-            return plt
+            return plt.gcf()
 
         plt.show()
+        
+        return None
 
     def get_integral_spectrum(
         self,
@@ -1505,7 +1601,7 @@ class Source:
         stop_time = stop_time * u.s
 
         exposure_time = stop_time - start_time
-        
+
         # Avoid divide by zero
         if exposure_time.value <= 0:
             return np.nan
@@ -1725,7 +1821,7 @@ class Source:
         stop_time = stop_time.to("s")
 
         exposure_time = stop_time - start_time
-        
+
         # Avoid divide by zero
         if exposure_time.value <= 0:
             return np.nan

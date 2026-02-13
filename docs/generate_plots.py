@@ -1,9 +1,3 @@
-"""Generate plots for documentation.
-
-This script generates all plots used in the documentation.
-Add new plot generation functions here as needed.
-"""
-
 import argparse
 import matplotlib.pyplot as plt
 import numpy as np
@@ -277,7 +271,6 @@ class PlotGenerator:
 
         # Example 3: Pre-computed Curves
         # Use the computed curves from the basic example as "pre-computed"
-        times_precomputed = sens_basic.times
         sens_values_precomputed = sens_basic.sensitivity_curve
         photon_flux_values_precomputed = sens_basic.photon_flux_curve
 
