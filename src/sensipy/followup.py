@@ -32,19 +32,10 @@ def get_row(
     Raises:
         ValueError: If no row matches all the specified criteria, if no filters are
             provided, or if a specified column does not exist in the dataframe.
-
-    Example:
-        >>> row = get_row(
-        ...     lookup_df=df,
-        ...     event_id=42,
-        ...     irf_site="north",
-        ...     irf_zenith=20,
-        ...     irf_ebl=False,
-        ... )
     """
     if not filters:
         raise ValueError("At least one filter must be provided.")
-    
+
     # Build the filter condition dynamically
     mask = pd.Series([True] * len(lookup_df), index=lookup_df.index)
     for column, value in filters.items():
@@ -54,7 +45,7 @@ def get_row(
                 f"Available columns: {list(lookup_df.columns)}"
             )
         mask = mask & (lookup_df[column] == value)
-    
+
     rows = lookup_df[mask]
 
     if len(rows) < 1:
@@ -120,7 +111,7 @@ def extrapolate_obs_time(
         )
         res["obs_time"] = -1
         return res
-    
+
     if obs_time_column not in event_info.columns:
         res["error_message"] = (
             f"Column '{obs_time_column}' (obs_time_column) does not exist in the dataframe. "
@@ -142,9 +133,7 @@ def extrapolate_obs_time(
 
     if other_info:
         if len(event_info) == 0:
-            res["error_message"] = (
-                f"No matching data found with filters {filters}"
-            )
+            res["error_message"] = f"No matching data found with filters {filters}"
             res["obs_time"] = -1
             return res
         for key in other_info:
@@ -157,18 +146,14 @@ def extrapolate_obs_time(
             res[key] = event_info.iloc[0][key]
 
     if len(event_info) == 0:
-        res["error_message"] = (
-            f"No matching data found with filters {filters}"
-        )
+        res["error_message"] = f"No matching data found with filters {filters}"
         res["obs_time"] = -1
         return res
 
     event_dict = event_info.set_index(delay_column)[obs_time_column].to_dict()
 
     if not event_dict:
-        res["error_message"] = (
-            f"No matching data found with filters {filters}"
-        )
+        res["error_message"] = f"No matching data found with filters {filters}"
         res["obs_time"] = -1
         return res
 
@@ -256,22 +241,6 @@ def get_sensitivity(
         ValueError: If both lookup_df and curves are provided, if neither lookup_df nor
             both curves are provided, if sensitivity_curve is not a list or Quantity,
             or if observatory cannot be determined when needed.
-
-    Example:
-        >>> # Using lookup_df with filters
-        >>> sens = get_sensitivity(
-        ...     lookup_df=df,
-        ...     event_id=42,
-        ...     irf_zenith=20,
-        ...     irf_ebl=False,
-        ...     observatory="ctao_north",
-        ... )
-        >>> # Using curves directly
-        >>> sens = get_sensitivity(
-        ...     sensitivity_curve=[1e-10, 1e-11],
-        ...     photon_flux_curve=[1e-9, 1e-10],
-        ...     observatory="ctao_south",
-        ... )
     """
     if lookup_df is not None:
         if sensitivity_curve is not None or photon_flux_curve is not None:
@@ -288,10 +257,10 @@ def get_sensitivity(
     if lookup_df is not None:
         # Get row from dataframe using filters
         row = get_row(lookup_df=lookup_df, **filters)
-        
+
         sensitivity_curve = row["sensitivity_curve"]
         photon_flux_curve = row["photon_flux_curve"]
-        
+
         # If observatory not provided, try to construct from irf_site if available
         if observatory is None:
             if "irf_site" in filters:
@@ -458,11 +427,7 @@ def get_exposure(
 
         # Build filters dict for extrapolate_obs_time (exclude observatory from filters)
         # observatory is not a column in the dataframe
-        lookup_filters = {
-            k: v
-            for k, v in filters.items()
-            if k != "observatory"
-        }
+        lookup_filters = {k: v for k, v in filters.items() if k != "observatory"}
 
         obs_info = extrapolate_obs_time(
             delay=delay,
@@ -507,12 +472,14 @@ def get_exposure(
 
     # Extract ebl from filters if present, otherwise default to None
     ebl = filters.get("irf_ebl", None)
-    
+
     if ebl is not None and not isinstance(ebl, str):
         raise ValueError(f"ebl must be a string or None, got {ebl} of type {type(ebl)}")
-    
+
     if not isinstance(observatory, str):
-        raise ValueError(f"observatory must be a string, got {observatory} of type {type(observatory)}")
+        raise ValueError(
+            f"observatory must be a string, got {observatory} of type {type(observatory)}"
+        )
 
     sens = get_sensitivity(
         lookup_df=lookup_df,

@@ -53,10 +53,7 @@ def create_mock_lookup_table(
     Returns:
         Path to the created parquet file.
 
-    Example:
-        >>> from sensipy.data.create_mock_lookup import create_mock_lookup_table
-        >>> path = create_mock_lookup_table(n_events=5, sites=["north"])
-        >>> print(f"Created lookup table: {path}")
+    NOTE on AI: This function was written with assistance from LLMs.
     """
     if seed is not None:
         np.random.seed(seed)
