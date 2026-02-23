@@ -89,12 +89,12 @@
   \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
 \AtBeginDocument{\author{\parbox{\textwidth}{\centering
 Jarred G. Green\textsuperscript{1,2}, Barbara Patricelli\textsuperscript{3,4}, Antonio Stamerra\textsuperscript{4,5}, Monica Seglar-Arroyo\textsuperscript{6}\\[0.5em]
-\footnotesize\textsuperscript{1}~Max-Planck-Institut f\"ur Physik, Garching, Germany\\
-\footnotesize\textsuperscript{2}~Technische Universit\"at M\"unchen, Germany\\
+\footnotesize\textsuperscript{1}~Max-Planck-Institut für Physik, Garching, Germany\\
+\footnotesize\textsuperscript{2}~Technische Universität München, Germany\\
 \footnotesize\textsuperscript{3}~University of Pisa, Italy\\
 \footnotesize\textsuperscript{4}~INAF - Osservatorio Astronomico di Roma, Italy\\
 \footnotesize\textsuperscript{5}~Cherenkov Telescope Array Observatory, Bologna, Italy\\
-\footnotesize\textsuperscript{6}~Institut de F\'isica d'Altes Energies (IFAE), Bellaterra (Barcelona), Spain}}}
+\footnotesize\textsuperscript{6}~Institut de Fisica d'Altes Energies (IFAE), Bellaterra (Barcelona), Spain}}}
 \usepackage{bookmark}
 \IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
 \urlstyle{same}
@@ -106,7 +106,7 @@ Jarred G. Green\textsuperscript{1,2}, Barbara Patricelli\textsuperscript{3,4}, A
 \title{Sensipy: simulate gamma-ray observations of transient
 astrophysical sources}
 \author{}
-\date{6 February 2026}
+\date{}
 
 \begin{document}
 \maketitle
@@ -137,12 +137,11 @@ campaigns.
 The need for a toolkit like \texttt{sensipy} became clear while
 attempting to estimate the detectability of VHE counterparts to
 gravitational wave (GW) signals from binary neutron star mergers (BNS)
-with the upcoming Cherenkov Telescope Array Observatory (CTAO)
-(Patricelli et al. 2022; Green et al. 2024). During development, it
-became apparent that the included tools could be applied not only to VHE
-counterparts of BNS mergers, but also to other transient sources like
-gamma-ray bursts (GRBs), active galactic nuclei flares, novae,
-supernovae, and more.
+with the upcoming Cherenkov Telescope Array Observatory (CTAO). During
+development, it became apparent that the included tools could be applied
+not only to VHE counterparts of BNS mergers, but also to other transient
+sources like gamma-ray bursts (GRBs), active galactic nuclei flares,
+novae, supernovae, and more.
 
 Between GW, neutrino, optical, and space-based gamma-ray experiments,
 thousands of low-latency alerts are sent out to the greater community
@@ -177,7 +176,24 @@ follow-up campaigns:
   follow-up strategies in realtime?
 \end{itemize}
 
-\section{Functionality}\label{functionality}
+\section{State of the field}\label{state-of-the-field}
+
+Currently, \texttt{gammapy} is the largest player in the field of
+gamma-ray astrophysics, providing a substantial set of tools designed
+for the high-level analysis of data from many major future and
+currently-operating observatories (Donath et al. 2023). We make use of
+an applicable set of \texttt{gammapy} and \texttt{astropy} primitives
+under the hood, such that experienced users do not have to learn new
+APIs when beginning work with \texttt{sensipy}. Given that, the decision
+to develop \texttt{sensipy} as a standalone package is twofold. Firstly,
+our goal is not to participate directly in the analysis of telescope
+data, but to provide a set of simulation tools which can help to plan
+observation campaigns for these observatories. Secondly, as we provide
+methods which can be integrated directly into telescope control systems,
+it is important to keep \texttt{sensipy} focused, lightweight, and
+modular.
+
+\section{Software design}\label{software-design}
 
 The two main inputs to any \texttt{sensipy} pipeline are:
 
@@ -185,19 +201,35 @@ The two main inputs to any \texttt{sensipy} pipeline are:
 \tightlist
 \item
   an instrument response function (IRF), which describes how a telescope
-  performs under specific observing conditions.
+  performs under specific observing conditions
 \item
   intrinsic time-dependent emission spectra for a source, which can be
-  provided in either a FITS or CSV format.
+  provided in either a FITS or CSV format
 \end{itemize}
 
 Given these inputs, \texttt{sensipy} builds upon primitives provided by
-\texttt{astropy} and \texttt{gammapy} to provide the following main
-functionalities (The Astropy and Price-Whelan Collaboration et al. 2022;
-Donath et al. 2023). In addition, mock datasets are provided with
-working code examples, and batteries are included for easy access to
-publicly-available IRFs, e.g. (Cherenkov Telescope Array Observatory and
-Consortium 2021).
+\texttt{astropy} and \texttt{gammapy} to provide the main
+functionalities outlined below (The Astropy and Price-Whelan
+Collaboration et al. 2022; Donath et al. 2023). In addition, mock
+datasets are provided with working code examples, and batteries are
+included for easy access to publicly-available IRFs, e.g. (Cherenkov
+Telescope Array Observatory and Consortium 2021).
+
+\subsection{Design philosophy}\label{design-philosophy}
+
+Most users already come to \texttt{sensipy} with their own theoretical
+models at hand, so providing clear APIs with simple and speedy
+onboarding is front-of-mind during development. The documentation is
+focused on small and self-contained quick-start examples along with
+every feature, so that users can directly begin with code-blocks
+relevant to their problem.
+
+In addition, because this package can also be built directly into
+telescope control software in order to provide realtime insights into
+observational campaigns, we chose to organize \texttt{sensipy} into a
+number of smaller modules that can be individually imported, with each
+module in turn only calling upon the bare set of primitives needed. Each
+of the modules and their functionalities are briefly described below.
 
 \subsection{\texorpdfstring{Sensitivity Curve Calculation with
 \texttt{sensipy.sensitivity}}{Sensitivity Curve Calculation with sensipy.sensitivity}}\label{sensitivity-curve-calculation-with-sensipy.sensitivity}
@@ -278,11 +310,6 @@ For example, the following workflow can be implemented within
   detection
 \end{enumerate}
 
-Such workflows based on \texttt{sensipy} modules are already being
-internally evaluated within the MAGIC, Large-Size Telescope (LST), and
-CTAO collaborations for follow-up of both GW and GRB alerts (e.g., Green
-et al. 2024; Patricelli et al. 2022).
-
 \subsubsection{Follow-ups of poorly localized
 events}\label{follow-ups-of-poorly-localized-events}
 
@@ -303,15 +330,36 @@ the optimal observing time at each pointing by
 \protect\texttt{sensipy}.}
 \end{figure}
 
+\section{Research impact statement}\label{research-impact-statement}
+
+The \texttt{sensipy} package has been under development for the past
+four years, and in 2025 the community began to grow rapidly as the
+package reached maturity. The software has been adapted by members of
+the CTAO Collaboration for a number of applications, including the
+official evaluation of the prospects of GW follow-up campaigns with the
+observatory. Numerous talks at major conferences in the field have
+included contributions created with \texttt{sensipy} as part of the main
+results (Patricelli et al. 2022; Green et al. 2024; Carosi et al. 2025;
+Seglar-Arroyo et al. 2025). In addition, independent researchers have
+also made use of the package in order to simulate observational
+campaigns with other observatories, including the Astrofisica con
+Specchi a Tecnologia Replicante Italiana (ASTRI) Mini-Array and the
+Large Array of imaging atmospheric Cherenkov Telescope (LACT) (Macera et
+al. 2025). Finally, workflows based upon the aforementioned
+\texttt{sensipy.followup} module, together with the \texttt{tilepy}
+package, are being internally tested within the Major Atmospheric Gamma
+Imaging Cherenkov (MAGIC) Telescopes and Large-Size Telescope (LST)
+collaborations for GW and GRB alert follow-ups.
+
 \section{AI usage disclosure}\label{ai-usage-disclosure}
 
-AI tools (GitHub Copilot, Grammarly) were used to proofread
-documentation and pull requests as well as scaffold tests. Instances
-where functions or classes were primarily generated with assistance from
-GitHub Copilot (auto model) are explicitly marked in the Python
-docstrings. All AI-assisted suggestions were carefully reviewed and
-approved by the authors of this manuscript. AI tools were not used in
-the writing of this manuscript in any capacity.
+AI tools (GitHub Copilot, Grammarly, Cursor Bugbot) were used to
+proofread documentation and pull requests as well as scaffold tests.
+Instances where functions or classes were primarily generated with
+assistance from GitHub Copilot (auto model) are explicitly marked in the
+Python docstrings. All AI-assisted suggestions were carefully reviewed
+and approved by the authors of this manuscript. AI tools were not used
+in the writing of this manuscript in any capacity.
 
 \section*{References}\label{references}
 \addcontentsline{toc}{section}{References}
@@ -329,6 +377,14 @@ Abbasi, R., M. Ackermann, J. Adams, et al. 2023. {``{IceCat}-1: The
 {IceCube} Event Catalog of Alert Tracks.''} \emph{The Astrophysical
 Journal Supplement Series} 269 (1): 25.
 \url{https://doi.org/10.3847/1538-4365/acfa95}.
+
+\bibitem[\citeproctext]{ref-seglar-arroyo_icrc_2025}
+Carosi, Alessandro, Antonio Stamerra, Barbara Patricelli, et al. 2025.
+{``Bridging Gravitational Waves and High-Energy Gamma Rays: Searching
+for sGRB Afterglows from Compact Binary Coalescences with {CTAO}.''}
+\emph{International Cosmic Ray Conference (ICRC) 2025 (Conference
+Poster)}.
+\url{https://indico.cern.ch/event/1258933/contributions/6497376/}.
 
 \bibitem[\citeproctext]{ref-observatory_ctao_2021}
 Cherenkov Telescope Array Observatory and Consortium. 2021. \emph{{CTAO}
@@ -352,6 +408,14 @@ Fourth Fermi-{GBM} Gamma-Ray Burst Catalog: A Decade of Data.''}
 \emph{The Astrophysical Journal} 893 (1): 46.
 \url{https://doi.org/10.3847/1538-4357/ab7a18}.
 
+\bibitem[\citeproctext]{ref-macera_detection_tevpa_2025}
+Macera, Samanta, Biswajit Banerjee, Monica Seglar-Arroyo, and Gor
+Oganesyan. 2025. {``Detection of {TeV} Emission from Poorly Localized
+{GRBs} with Ground Based {IACTs}, and Future Perspective in the Era of
+{CTAO}.''} \emph{TeV Particle Astrophysics (TeVPA) 2025 (Conference
+Talk)}, November 4.
+\url{https://indico.ific.uv.es/event/7986/contributions/28068/}.
+
 \bibitem[\citeproctext]{ref-patricelli_searching_2022}
 Patricelli, Barbara, Alessandro Carosi, Lara Nava, et al. 2022.
 \emph{Searching for Very-High-Energy Electromagnetic Counterparts to
@@ -364,6 +428,14 @@ Fabian Schüssler. 2024. {``Cross Observatory Coordination with Tilepy: A
 Novel Tool for Observations of Multimessenger Transient Events.''}
 \emph{The Astrophysical Journal Supplement Series} 274 (September): 1.
 \url{https://doi.org/10.3847/1538-4365/ad5bde}.
+
+\bibitem[\citeproctext]{ref-seglar-arroyo_tevpa_2025}
+Seglar-Arroyo, Mónica, Jarred Green, Lara Nava, Antonio Stamerra, Fabian
+Schüssler, and Barbara Patricelli. 2025. {``Bridging Gravitational Waves
+and High-Energy Gamma Rays: Searching for sGRB Afterglows from Compact
+Binary Coalescences with {CTAO}.''} \emph{TeV Particle Astrophysics
+(TeVPA) 2025 (Conference Talk)}, November 4.
+\url{https://indico.ific.uv.es/event/7986/contributions/28071/}.
 
 \bibitem[\citeproctext]{ref-collaboration_astropy_2022}
 The Astropy and Price-Whelan Collaboration, Adrian M., Pey Lian Lim,

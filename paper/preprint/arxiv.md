@@ -24,7 +24,7 @@ The information extracted from the tools included in `sensipy` can be used to he
 
 # Statement of need
 
-The need for a toolkit like `sensipy` became clear while attempting to estimate the detectability of VHE counterparts to gravitational wave (GW) signals from binary neutron star mergers (BNS) with the upcoming Cherenkov Telescope Array Observatory (CTAO) [@patricelli_searching_2022; @green_chasing_2024]. During development, it became apparent that the included tools could be applied not only to VHE counterparts of BNS mergers, but also to other transient sources like gamma-ray bursts (GRBs), active galactic nuclei flares, novae, supernovae, and more.
+The need for a toolkit like `sensipy` became clear while attempting to estimate the detectability of VHE counterparts to gravitational wave (GW) signals from binary neutron star mergers (BNS) with the upcoming Cherenkov Telescope Array Observatory (CTAO). During development, it became apparent that the included tools could be applied not only to VHE counterparts of BNS mergers, but also to other transient sources like gamma-ray bursts (GRBs), active galactic nuclei flares, novae, supernovae, and more.
 
 Between GW, neutrino, optical, and space-based gamma-ray experiments, thousands of low-latency alerts are sent out to the greater community each year [@abac_gwtc-40_2025; @von_kienlin_fourth_2020; @abbasi_icecat-1_2023]. However, very few of these events actually result in detections in the VHE gamma-ray regime. This is due to many factors, including the rapid decay of fluxes, delay in telescope repointing, uncertainty on the sky localization of the source, and observatory duty cycles. In the face of these challenges, `sensipy` aims to help answer the following questions for gamma-ray astronomers interested in optimizing their follow-up campaigns:
 
@@ -35,14 +35,24 @@ Between GW, neutrino, optical, and space-based gamma-ray experiments, thousands 
 - How can intrinsic source properties (e.g. distance, flux) and observing conditions (e.g. latency, telescope pointing) affect detectability?
 - How can these results for catalogs of simulated events inform follow-up strategies in realtime?
 
-# Functionality
+# State of the field
+
+Currently, `gammapy` is the largest player in the field of gamma-ray astrophysics, providing a substantial set of tools designed for the high-level analysis of data from many major future and currently-operating observatories [@donath_gammapy_2023]. We make use of an applicable set of `gammapy` and `astropy` primitives under the hood, such that experienced users do not have to learn new APIs when beginning work with `sensipy`. Given that, the decision to develop `sensipy` as a standalone package is twofold. Firstly, our goal is not to participate directly in the analysis of telescope data, but to provide a set of simulation tools which can help to plan observation campaigns for these observatories. Secondly, as we provide methods which can be integrated directly into telescope control systems, it is important to keep `sensipy` focused, lightweight, and modular.
+
+# Software design
 
 The two main inputs to any `sensipy` pipeline are:
 
-- an instrument response function (IRF), which describes how a telescope performs under specific observing conditions.
-- intrinsic time-dependent emission spectra for a source, which can be provided in either a FITS or CSV format.
+- an instrument response function (IRF), which describes how a telescope performs under specific observing conditions
+- intrinsic time-dependent emission spectra for a source, which can be provided in either a FITS or CSV format
 
-Given these inputs, `sensipy` builds upon primitives provided by `astropy` and `gammapy` to provide the following main functionalities [@collaboration_astropy_2022; @donath_gammapy_2023]. In addition, mock datasets are provided with working code examples, and batteries are included for easy access to publicly-available IRFs, e.g. [@observatory_ctao_2021].  
+Given these inputs, `sensipy` builds upon primitives provided by `astropy` and `gammapy` to provide the main functionalities outlined below [@collaboration_astropy_2022; @donath_gammapy_2023]. In addition, mock datasets are provided with working code examples, and batteries are included for easy access to publicly-available IRFs, e.g. [@observatory_ctao_2021].
+
+## Design philosophy
+
+Most users already come to `sensipy` with their own theoretical models at hand, so providing clear APIs with simple and speedy onboarding is front-of-mind during development. The documentation is focused on small and self-contained quick-start examples along with every feature, so that users can directly begin with code-blocks relevant to their problem.
+
+In addition, because this package can also be built directly into telescope control software in order to provide realtime insights into observational campaigns, we chose to organize `sensipy` into a number of smaller modules that can be individually imported, with each module in turn only calling upon the bare set of primitives needed. Each of the modules and their functionalities are briefly described below.
 
 ## Sensitivity Curve Calculation with `sensipy.sensitivity`
 
@@ -68,16 +78,18 @@ Tables of observation times can also be used as lookup tables (LUTs) during tele
 2. a transient alert arrives during normal telescope operation and telescopes begin observing the event position with a latency of $t_L$
 3. the LUT is filtered and interpolated in realtime in order to quickly calculate an informed estimate on the exposure time needed for a detection
 
-Such workflows based on `sensipy` modules are already being internally evaluated within the MAGIC, Large-Size Telescope (LST), and CTAO collaborations for follow-up of both GW and GRB alerts [e.g., @green_chasing_2024; @patricelli_searching_2022].
-
 ### Follow-ups of poorly localized events
 
 In addition, the functions included in `sensipy.followup` may be used in tandem with scheduling software like `tilepy` for the realtime follow-up of poorly-localized events, including GRB, GW, and neutrino alerts [@seglar-arroyo_cross_2024]. These scheduling tools create an optimized list of telescope pointings on the sky, while `sensipy` is used simultaneously to optimize the exposure time needed at each new pointing.
 
 ![A follow-up coverage map for an example GW event (S250704ab). The ordering of pointings is calculated by `tilepy` and the optimal observing time at each pointing by `sensipy`.](figures/figure3.png)
 
+# Research impact statement
+
+The `sensipy` package has been under development for the past four years, and in 2025 the community began to grow rapidly as the package reached maturity. The software has been adapted by members of the CTAO Collaboration for a number of applications, including the official evaluation of the prospects of GW follow-up campaigns with the observatory. Numerous talks at major conferences in the field have included contributions created with `sensipy` as part of the main results [@patricelli_searching_2022; @green_chasing_2024; @seglar-arroyo_icrc_2025; @seglar-arroyo_tevpa_2025]. In addition, independent researchers have also made use of the package in order to simulate observational campaigns with other observatories, including the Astrofisica con Specchi a Tecnologia Replicante Italiana (ASTRI) Mini-Array and the Large Array of imaging atmospheric Cherenkov Telescope (LACT) [@macera_detection_tevpa_2025]. Finally, workflows based upon the aforementioned `sensipy.followup` module, together with the `tilepy` package, are being internally tested within the Major Atmospheric Gamma Imaging Cherenkov (MAGIC) Telescopes and Large-Size Telescope (LST) collaborations for GW and GRB alert follow-ups.
+
 # AI usage disclosure
 
-AI tools (GitHub Copilot, Grammarly) were used to proofread documentation and pull requests as well as scaffold tests. Instances where functions or classes were primarily generated with assistance from GitHub Copilot (auto model) are explicitly marked in the Python docstrings. All AI-assisted suggestions were carefully reviewed and approved by the authors of this manuscript. AI tools were not used in the writing of this manuscript in any capacity.
+AI tools (GitHub Copilot, Grammarly, Cursor Bugbot) were used to proofread documentation and pull requests as well as scaffold tests. Instances where functions or classes were primarily generated with assistance from GitHub Copilot (auto model) are explicitly marked in the Python docstrings. All AI-assisted suggestions were carefully reviewed and approved by the authors of this manuscript. AI tools were not used in the writing of this manuscript in any capacity.
 
 # References
